@@ -274,8 +274,8 @@ def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
 
 # --- PÁGINAS ---
 def page_dashboard():
-    # AQUI ESTA A LINHA PARA O TESTE (SE QUISER MUDAR O NOME DEPOIS)
-    st.markdown('<h1 class="custom-title"><i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel de Controle</h1>', unsafe_allow_html=True)
+    # --- AQUI ESTA A ALTERACAO DO TESTE (PAINEL TESTE 123) ---
+    st.markdown('<h1 class="custom-title"><i class="bi bi-speedometer2" style="color: #00B4DB;"></i> PAINEL TESTE 123</h1>', unsafe_allow_html=True)
     
     df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); df_a = carregar_dados("Agendamentos")
     receita, despesa, pendente, count_p, lucro_vendas = 0.0, 0.0, 0.0, 0, 0.0
