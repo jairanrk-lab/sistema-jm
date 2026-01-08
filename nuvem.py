@@ -44,7 +44,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.40" (TOTAL ICON SWEEP - VARREDURA COMPLETA) 🌑 ---
+# --- 3. ESTILO CSS "V6.42" (ESTILO MAXTON + ÍCONES DINÂMICOS) 🌑 ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -91,6 +91,16 @@ st.markdown("""
         margin-bottom: 20px;
         letter-spacing: -1px;
     }
+     /* Estilo para os Subtítulos com Ícones (H3 Customizado) */
+    .custom-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        margin-top: 10px;
+    }
 
     /* --- CORREÇÃO TOOLTIP DO GRÁFICO (TEXTO PRETO) --- */
     #vg-tooltip-element {
@@ -134,7 +144,7 @@ st.markdown("""
         border-radius: 6px !important; 
         font-family: 'Montserrat', sans-serif !important;
         letter-spacing: 0.5px !important;
-        text-transform: uppercase !important; /* Deixa tudo maiúsculo estilo Premium */
+        text-transform: uppercase !important; 
         font-size: 14px !important;
         padding: 10px 24px !important;
     }
@@ -219,25 +229,31 @@ def excluir_agendamento(indice_linha):
 @st.cache_data
 def carregar_catalogo():
     return pd.DataFrame({
-        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários"],
-        "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0],
-        "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0],
-        "Higienização Interna": [300.0, 300.0, 300.0, 350.0, 400.0],
-        "Restauração Faróis": [200.0, 200.0, 200.0, 200.0, 200.0],
-        "Cristalização Vidros": [90.0, 120.0, 150.0, 150.0, 150.0],
-        "Vitrificação Pintura": [800.0, 900.0, 1100.0, 1300.0, 1300.0]
+        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
+        "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
+        "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
+        "Higienização Interna": [300.0, 300.0, 300.0, 350.0, 400.0, 0.0],
+        "Restauração Faróis": [200.0, 200.0, 200.0, 200.0, 200.0, 100.0],
+        "Cristalização Vidros": [90.0, 120.0, 150.0, 150.0, 150.0, 50.0],
+        "Vitrificação Pintura": [800.0, 900.0, 1100.0, 1300.0, 1300.0, 500.0]
     })
+
+def obter_icone_veiculo(categoria_texto):
+    if not isinstance(categoria_texto, str): return '<i class="bi bi-car-front-fill"></i>'
+    cat_lower = categoria_texto.lower()
+    if "moto" in cat_lower: return '<i class="bi bi-motorcycle"></i>'
+    elif "suv" in cat_lower or "picape" in cat_lower or "caminhonete" in cat_lower: return '<i class="bi bi-truck-front-fill"></i>'
+    elif "van" in cat_lower or "utilit" in cat_lower: return '<i class="bi bi-bus-front-fill"></i>'
+    else: return '<i class="bi bi-car-front-fill"></i>'
 
 def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
     pdf = FPDF()
     pdf.add_page()
-    
     if os.path.exists("logo.png"): 
         pdf.image("logo.png", x=55, y=10, w=100) 
         pdf.ln(35) 
     else: 
         pdf.ln(20)
-    
     def txt(t): return t.encode('latin-1', 'replace').decode('latin-1')
     pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt=txt("JM DETAIL - Estética Automotiva Premium"), ln=True, align='C')
     pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt=txt("Tucano - BA | Rua São João, 54 | (75) 99830-3753"), ln=True, align='C')
@@ -258,9 +274,7 @@ def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
 
 # --- PÁGINAS ---
 def page_dashboard():
-    # Título com Ícone (Azul)
     st.markdown('<h1 class="custom-title"><i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel de Controle</h1>', unsafe_allow_html=True)
-    
     df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); df_a = carregar_dados("Agendamentos")
     receita, despesa, pendente, count_p, lucro_vendas = 0.0, 0.0, 0.0, 0, 0.0
     if not df_v.empty:
@@ -274,9 +288,7 @@ def page_dashboard():
         despesa = pd.to_numeric(df_d["Valor"].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
     lucro_total = lucro_vendas - despesa
     cor_lucro = "bg-green" if lucro_total >= 0 else "bg-red"
-    
     c1, c2, c3, c4 = st.columns(4)
-    # Cards com ícones de fundo (Efeito Premium)
     with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES ({count_p})</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente)}</div></div>', unsafe_allow_html=True)
     with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita)}</div></div>', unsafe_allow_html=True)
     with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa)}</div></div>', unsafe_allow_html=True)
@@ -284,123 +296,83 @@ def page_dashboard():
     st.write("---")
     col_g, col_a = st.columns([2, 1])
     with col_g:
-        st.subheader("📈 Performance")
+        st.markdown('<h3 class="custom-subtitle"><i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance</h3>', unsafe_allow_html=True)
         if not df_v.empty:
+            # --- GRÁFICO ESTILO "MAXTON" (CURVAS + NEON) ---
             base = alt.Chart(df_v).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
-            bars = base.mark_bar(size=40, cornerRadiusEnd=8).encode(
+            
+            # Barras Neon
+            bars = base.mark_bar(size=40, cornerRadiusEnd=10).encode(
                 y=alt.Y('Total', axis=None),
-                color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00B4DB', '#FF8C00']), legend=None),
+                # Degradê simulado com cores vibrantes
+                color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None),
                 tooltip=['Data', 'Cliente', 'Carro', 'Total', 'Lucro Liquido']
             )
-            line = base.mark_line(color='#39FF14', strokeWidth=3, point=True).encode(
+            
+            # Linha Curva (Interpolate = Natural para fazer ondas)
+            line = base.mark_line(
+                color='#0575E6', # Azul elétrico
+                strokeWidth=4, 
+                interpolate='natural' # AQUI ESTÁ O SEGREDO DA CURVA SUAVE
+            ).encode(
                 y=alt.Y('Lucro Liquido', axis=None),
                 tooltip=['Data', 'Lucro Liquido']
             )
+            
             chart = alt.layer(bars, line).properties(
                 height=380, background='transparent'
             ).configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
             st.altair_chart(chart, use_container_width=True)
     with col_a:
-        st.subheader("Próximos na Agenda") # Removido emoji do título
+        st.markdown('<h3 class="custom-subtitle"><i class="bi bi-calendar-event" style="color: white;"></i> Próximos na Agenda</h3>', unsafe_allow_html=True)
         if df_a.empty: st.info("Agenda livre.")
         else:
             for _, r in df_a.tail(4).iloc[::-1].iterrows():
-                # Card de Agenda com Ícones Bootstrap
+                cat_atual = r.get("Categoria", "")
+                icone_veiculo = obter_icone_veiculo(cat_atual)
                 st.markdown(f"""
                 <div class="agenda-card">
-                    <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB">
-                        <i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}
-                    </div>
-                    <div style="font-size:18px; font-weight:bold; margin-bottom:5px">
-                        <i class="bi bi-car-front-fill"></i> {r["Veiculo"]}
-                    </div>
-                    <div style="color:#aaa; font-size:14px; margin-bottom:5px">
-                        <i class="bi bi-person-fill"></i> {r["Cliente"]}
-                    </div>
-                    <div style="font-size:13px; color:#ddd; margin-bottom:10px">
-                        <i class="bi bi-tools"></i> {r["Servicos"]}
-                    </div>
-                    <div style="font-size:20px; font-weight:bold; color:#39FF14">
-                        {formatar_moeda(float(r["Total"]))}
-                    </div>
+                    <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB"><i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}</div>
+                    <div style="font-size:18px; font-weight:bold; margin-bottom:5px">{icone_veiculo} {r["Veiculo"]}</div>
+                    <div style="color:#aaa; font-size:14px; margin-bottom:5px"><i class="bi bi-person-fill"></i> {r["Cliente"]}</div>
+                    <div style="font-size:13px; color:#ddd; margin-bottom:10px"><i class="bi bi-tools"></i> {r["Servicos"]}</div>
+                    <div style="font-size:20px; font-weight:bold; color:#39FF14">{formatar_moeda(float(r["Total"]))}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
 def page_financeiro():
-    # Título com Ícone (Verde)
     st.markdown('<h1 class="custom-title"><i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira</h1>', unsafe_allow_html=True)
-    
     st.info("💡 Como funciona: O saldo 'A Pagar' soma apenas o que está 'Pendente' na planilha.")
-    
     df_v = carregar_dados("Vendas")
     comissao_pendente = 0.0
     fundo_caixa_acumulado = 0.0
-    
     if not df_v.empty:
-        if "Status Comissao" not in df_v.columns:
-            df_v["Status Comissao"] = "Pendente"
-
+        if "Status Comissao" not in df_v.columns: df_v["Status Comissao"] = "Pendente"
         for c in ["Valor Comissao", "Fundo Caixa"]:
-            if c in df_v.columns:
-                df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
-        
+            if c in df_v.columns: df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
         df_pendentes = df_v[df_v["Status Comissao"] != "Pago"]
         comissao_pendente = df_pendentes["Valor Comissao"].sum()
         fundo_caixa_acumulado = df_v["Fundo Caixa"].sum()
-
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"""
-        <div class="dash-card bg-purple">
-            <i class="bi bi-person-badge-fill card-icon-bg"></i>
-            <h4>A PAGAR (PENDENTE)</h4>
-            <div style="font-size:32px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div>
-            <p style="margin-top:10px; opacity:0.8">Comissão da Equipe/Irmão</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown(f"""<div class="dash-card bg-purple"><i class="bi bi-person-badge-fill card-icon-bg"></i><h4>A PAGAR (PENDENTE)</h4><div style="font-size:32px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><p style="margin-top:10px; opacity:0.8">Comissão da Equipe/Irmão</p></div>""", unsafe_allow_html=True)
         if comissao_pendente > 0:
-            if st.button("CONFIRMAR PAGAMENTO REALIZADO", use_container_width=True): # Texto limpo
-                sheet = conectar_google_sheets()
-                ws = sheet.worksheet("Vendas")
-                dados_planilha = ws.get_all_records()
+            if st.button("CONFIRMAR PAGAMENTO REALIZADO", use_container_width=True):
+                sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados_planilha = ws.get_all_records()
                 try:
-                    header = ws.row_values(1)
-                    col_idx = header.index("Status Comissao") + 1
-                    updates = []
+                    header = ws.row_values(1); col_idx = header.index("Status Comissao") + 1; updates = []
                     for i, linha in enumerate(dados_planilha):
-                        v_comissao = str(linha.get("Valor Comissao", "0")).replace('R$', '').replace(',', '.')
-                        try: v_float = float(v_comissao)
-                        except: v_float = 0.0
-                        status_atual = str(linha.get("Status Comissao", ""))
-                        if v_float > 0 and status_atual != "Pago":
-                            ws.update_cell(i + 2, col_idx, "Pago")
-                    st.success("Pagamento registrado! A planilha foi atualizada para 'Pago'.")
-                    st.rerun()
-                except ValueError:
-                    st.error("ERRO CRÍTICO: Não encontrei a coluna 'Status Comissao' na planilha.")
-
+                        v_float = pd.to_numeric(str(linha.get("Valor Comissao", "0")).replace('R$', '').replace(',', '.'), errors='coerce')
+                        if v_float > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
+                    st.success("Pagamento registrado!"); st.rerun()
+                except ValueError: st.error("Erro: Coluna 'Status Comissao' não encontrada.")
     with c2:
-        st.markdown(f"""
-        <div class="dash-card bg-dark">
-            <i class="bi bi-safe2-fill card-icon-bg"></i>
-            <h4>CAIXA EMPRESA (10%)</h4>
-            <div style="font-size:32px;font-weight:bold">{formatar_moeda(fundo_caixa_acumulado)}</div>
-            <p style="margin-top:10px; opacity:0.8">Acumulado total para insumos.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.write("---")
-    st.subheader("Extrato de Comissões")
-    if not df_v.empty:
-        df_show = df_v[df_v["Status Comissao"] != "Pago"][["Data", "Carro", "Valor Comissao", "Status Comissao"]]
-        st.dataframe(df_show, use_container_width=True)
+        st.markdown(f"""<div class="dash-card bg-dark"><i class="bi bi-safe2-fill card-icon-bg"></i><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:32px;font-weight:bold">{formatar_moeda(fundo_caixa_acumulado)}</div><p style="margin-top:10px; opacity:0.8">Acumulado total para insumos.</p></div>""", unsafe_allow_html=True)
+    st.write("---"); st.subheader("Extrato de Comissões"); 
+    if not df_v.empty: st.dataframe(df_v[df_v["Status Comissao"] != "Pago"][["Data", "Carro", "Valor Comissao", "Status Comissao"]], use_container_width=True)
 
 def page_agendamento():
-    # Título com Ícone (Branco)
     st.markdown('<h1 class="custom-title"><i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada</h1>', unsafe_allow_html=True)
-    
-    # Abas com Ícones (Simulados com texto, já que st.tabs não aceita HTML direto no label ainda, mas vamos manter limpo)
     tab_list, tab_new = st.tabs(["LISTA DE SERVIÇOS", "NOVO AGENDAMENTO"]) 
     df_cat = carregar_catalogo()
     with tab_new:
@@ -421,23 +393,14 @@ def page_agendamento():
         comissao_prev = total * 0.40 if "Irmão" in quem else 0.0
         fundo_prev = total * 0.10
         lucro_prev = total - comissao_prev - fundo_prev
-        
-        # Orçamento Preview com Ícone
-        st.markdown(f"""
-        <div style='background:#111;padding:15px;border-radius:10px;border:1px solid #333'>
-            <h4><i class="bi bi-tag-fill"></i> Orçamento: {formatar_moeda(total)}</h4>
-            <small>Fundo (10%): {formatar_moeda(fundo_prev)} | Comissão: {formatar_moeda(comissao_prev)}</small>
-            <p style='color:#39FF14; margin:5px 0 0 0; font-weight:bold'>Lucro Líquido Previsto: {formatar_moeda(lucro_prev)}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown(f"""<div style='background:#111;padding:15px;border-radius:10px;border:1px solid #333'><h4><i class="bi bi-tag-fill"></i> Orçamento: {formatar_moeda(total)}</h4><small>Fundo (10%): {formatar_moeda(fundo_prev)} | Comissão: {formatar_moeda(comissao_prev)}</small><p style='color:#39FF14; margin:5px 0 0 0; font-weight:bold'>Lucro Líquido Previsto: {formatar_moeda(lucro_prev)}</p></div>""", unsafe_allow_html=True)
         if st.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
             if cli and veic and (escolhidos or extra_v > 0):
                 servicos_finais = ", ".join(escolhidos)
                 if extra_n: servicos_finais += f" (+ {extra_n})"
-                dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": servicos_finais, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev}
+                dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": servicos_finais, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat}
                 if salvar_no_google("Agendamentos", dados): st.success("Agendado com sucesso!"); st.balloons()
-                else: st.error("ERRO AO CONECTAR: Verifique a aba 'Agendamentos' na planilha.")
+                else: st.error("ERRO AO CONECTAR: Verifique se criou a coluna 'Categoria' na aba Agendamentos.")
             else: st.error("Preencha o cliente e pelo menos um serviço!")
     with tab_list:
         df_a = carregar_dados("Agendamentos")
@@ -446,27 +409,17 @@ def page_agendamento():
             for i, r in df_a.iterrows():
                 with st.container():
                     total_val = float(r["Total"])
-                    # CARD DE AGENDA (Igual ao do Dashboard)
+                    cat_atual = r.get("Categoria", "")
+                    icone_veiculo = obter_icone_veiculo(cat_atual)
                     st.markdown(f"""
                     <div class="agenda-card">
-                        <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB">
-                            <i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}
-                        </div>
-                        <div style="font-size:18px; font-weight:bold; margin-bottom:5px">
-                            <i class="bi bi-car-front-fill"></i> {r["Veiculo"]}
-                        </div>
-                        <div style="color:#aaa; font-size:14px; margin-bottom:5px">
-                            <i class="bi bi-person-fill"></i> {r["Cliente"]}
-                        </div>
-                        <div style="font-size:13px; color:#ddd; margin-bottom:10px">
-                            <i class="bi bi-tools"></i> {r["Servicos"]}
-                        </div>
-                        <div style="font-size:20px; font-weight:bold; color:#39FF14">
-                            {formatar_moeda(total_val)}
-                        </div>
+                        <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB"><i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}</div>
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:5px">{icone_veiculo} {r["Veiculo"]}</div>
+                        <div style="color:#aaa; font-size:14px; margin-bottom:5px"><i class="bi bi-person-fill"></i> {r["Cliente"]}</div>
+                        <div style="font-size:13px; color:#ddd; margin-bottom:10px"><i class="bi bi-tools"></i> {r["Servicos"]}</div>
+                        <div style="font-size:20px; font-weight:bold; color:#39FF14">{formatar_moeda(total_val)}</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    
                     c1, c2 = st.columns(2)
                     with c1:
                         if st.button(f"CONCLUIR SERVIÇO", key=f"efet_{i}"):
@@ -477,33 +430,26 @@ def page_agendamento():
                                 "Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], 
                                 "Total": total_val, "Status": "Concluído", "Pagamento": "-", "Funcionario": r["Executor"], 
                                 "Valor Comissao": comissao, "Fundo Caixa": fundo_caixa, "Lucro Liquido": lucro_liq, "Agendamentos": "",
-                                "Status Comissao": "Pendente"
+                                "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")
                             }
                             if salvar_no_google("Vendas", nova_venda):
-                                if excluir_agendamento(i):
-                                    st.success("Serviço Concluído! Movido para o Histórico.")
-                                    t_sleep.sleep(1.5)
-                                    st.rerun()
-                                else:
-                                    st.warning("Salvo nas Vendas, mas erro ao limpar da Agenda.")
+                                if excluir_agendamento(i): st.success("Serviço Concluído!"); t_sleep.sleep(1.5); st.rerun()
+                                else: st.warning("Salvo em Vendas, mas erro ao limpar da Agenda.")
+                            else: st.error("ERRO: Verifique se criou a coluna 'Categoria' na aba Vendas.")
                     with c2:
                         precos_pdf = {r["Servicos"]: total_val}
                         pdf_bytes = gerar_pdf(r["Cliente"], r["Veiculo"], r["Placa"], r["Data"], precos_pdf, total_val)
                         st.download_button("BAIXAR ORÇAMENTO (PDF)", data=pdf_bytes, file_name=f"Orcamento_{r['Cliente']}.pdf", mime="application/pdf", key=f"pdf_{i}")
 
 def page_despesas():
-    # Título com Ícone (Vermelho)
     st.markdown('<h1 class="custom-title"><i class="bi bi-receipt" style="color: #D90429;"></i> Despesas Externas</h1>', unsafe_allow_html=True)
-    
     c1, c2 = st.columns([3, 1]); desc = c1.text_input("Descrição"); val = c2.number_input("Valor", min_value=0.0)
     if st.button("LANÇAR DESPESA"):
         if salvar_no_google("Despesas", {"Data": datetime.now().strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val}): st.success("Salvo!")
         else: st.error("Erro ao conectar na planilha.")
 
 def page_historico():
-    # Título com Ícone (Amarelo)
     st.markdown('<h1 class="custom-title"><i class="bi bi-clock-history" style="color: #FFC107;"></i> Garagem & Histórico</h1>', unsafe_allow_html=True)
-    
     df = carregar_dados("Vendas")
     if df.empty: st.info("Sem registros."); return
     busca = st.text_input("Buscar...").strip().lower(); df_f = df.iloc[::-1]
@@ -511,12 +457,13 @@ def page_historico():
     for _, r in df_f.iterrows():
         cor = "#28a745" if r['Status'] == "Concluído" else "#ffc107"
         total_formatado = formatar_moeda(float(r["Total"]))
-        # CARD HISTÓRICO ATUALIZADO (SEM EMOJIS)
+        cat_atual = r.get("Categoria", "")
+        icone_veiculo = obter_icone_veiculo(cat_atual)
         st.markdown(f"""
         <div class="history-card" style="border-left-color: {cor}">
             <div style="display: flex; justify-content: space-between">
                 <div>
-                    <h3 style="margin:0"><i class="bi bi-car-front-fill"></i> {r["Carro"]}</h3>
+                    <h3 style="margin:0">{icone_veiculo} {r["Carro"]}</h3>
                     <p style="margin:5px 0; color:#aaa"><i class="bi bi-person"></i> {r["Cliente"]} &nbsp;•&nbsp; <i class="bi bi-calendar"></i> {r["Data"]}</p>
                     <small style="color:#666"><i class="bi bi-tools"></i> {r["Serviços"]}</small>
                 </div>
@@ -540,21 +487,9 @@ with st.sidebar:
         total_vendido = df_meta[df_meta["Status"]=="Concluído"]["Total"].sum()
         META_MENSAL = 5000.00
         progresso = min(total_vendido / META_MENSAL, 1.0)
-        # Meta com Ícone Crosshair (Mira)
-        st.markdown(f"""
-        <div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;">
-            <p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">
-                <i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês
-            </p>
-            <p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">
-                {formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;"><p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês</p><p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">{formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span></p></div>""", unsafe_allow_html=True)
         st.progress(progresso)
-    
-    # --- ASSINATURA OFICIAL v6.40 ---
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.40 Ultimate • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.42 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
