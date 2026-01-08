@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "sistema-jm-detail",
+  "private_key_id": "0d8980419fc674408fcaf863f6313c11d267adad",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCxFv3EGqm+j7KJ\nIiBhcNfLgECQvpw8PomuEX4Li7EWyjsaVlIbIcOtL2puTbvkr2YM1qbfuB1j7Om/\npPGEDG1GE0tiNYGZYASZXtNyudPdYwZ2rgzdMCSCYK9DH9kdyffmj5XGLRnfyEKo\nQUQzLG4lkXgv3r3nSb7x+uLNy1OR0A9+XNzNrLjGAWDRD5FRynG6qKvuxElAb9qS\nuKzW7u6DlZvB6oHYPAHtAcGPItSFjYwihr/sipTU1cdpf/Mfbsg/spgk+OnJBkAV\nj7I/PIvs3dVIMFCP1pJZkZVM32K9lfJSps6IvVrumzUOUHY1Tmyeeg1V5tPvCvk9\noNv2xenpAgMBAAECggEAE8J7nBQ4DMTysEnEKG87iu/TdHsqSnAVc3xs7quefcsg\nq2SGmpOqxnIgG3D1xlN6bPQOEHA2KlJS9jD4yGnNDxjDzHBpNrSPqs/ZgueAgAdG\nvzsWQR94MWqJn9EnzCK/NCUhGojphk5tfqHyss2SOEOqMBg34xz3zv8WK82UVHR9\n1GuTJvPUMnlKjhqbqlNq6HR7pcREsb/AEfgUPDe8nzn+UGYkmiF2ds9GOnJs7kau\nm/LDMoqUmPiPZ30i33jHdctc7hQ8HK7Dw3uKui2g0egSBrheT33mYdLS3A/fppiA\na/KzQxHXi8e5kG3jeFTL6kRni1EUfuU59ke3AACsQQKBgQDf9w2PkLhBmDoi2fQD\n+2xtFeGPlxPPQzuE4A0ODSCkEW9ZM+vNW4womkUiHlnaRX8B5ZQ/t+L0XIABPRuP\nbFypawq2UHwmw4vnIiHVfVgYp+vZxgJTeDOxF6MOOPD/dtrO03haaxsvHU8rhH3m\nepl3+Aig71K5duyDD+snPDfaQQKBgQDKa4DwwUFJBfvAwjWTUToYnsKeCuk/ZfaZ\npkE90IzaeoeiFztjC2u5eVMhIOZ53DpJVCqZrksWU69Zx0C1Q6TXVCkysi/Z9Xhx\nAF8Txx41hdhWTNpkmSUpetjzs+jL7MS0N5BmAcE4Gv8si5iwJdJkok0KDj2JCc44\nO1SXxh+VqQKBgAqnyF9iNUH5qhpqYC+oUJpIBjk8qNadjkFeH4DhowHrSm7mB3v3\ntQ1heZSL+R5nXAmNEKaPax7RH83vSFZkg2wUCahu39lASHGwsAdmNUDHDHOJ9iZe\ne6cbRsiwcNbWosZgTUOQAPUW4eNiJFNI1fBdPpvZhwgH3mzF3xw4wzeBAoGBAJ6R\nRonTKhxVNpkSyjtkNxmQTK7Xp06Fxn8o0RTmaWDA+b1Na7Uz/ihmVWuvRT0S+wn0\niAaplaKg3c17nEIjAl+4SymuknOwqrAC9Xgd1JljB0zbmX2SxpzO4mNOfUA6cwEm\nQdTW7RDRfTHdDTh3+G/jAGyvKR9P8h70w1i92II5AoGAXKTgq5mkcncfAcQXwTZ1\nYUwJdqllH+HIB2QgEf8PJlPfVtbpooMXzLnLiqftqAdyL/kF7SJM9D8WWG2OL/pj\nn2w0JoH+d9+8uwRpos7hXBLvT5d7BPyPXt/Vz9VT+/nuiEHq69IxqH7laDhD/88S\nhsRNt6PsSsVPywcbeIfLtWw=\n-----END PRIVATE KEY-----\n",
+  "client_email": "gestor-jm@sistema-jm-detail.iam.gserviceaccount.com",
+  "client_id": "116668833255128912169",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gestor-jm%40sistema-jm-detail.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

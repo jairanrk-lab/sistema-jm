@@ -1,0 +1,3 @@
+Data,Cliente,Carro,Placa,Serviços,Total,Status,Pagamento
+06/01/2026 23:09,teste orcamento,,,Lavagem Simples (R$ 50),50.0,Concluído,Aguardando
+06/01/2026 23:16,teste orcamento2,,,Lavagem Detalhada (R$ 50),50.0,Orçamento/Pendente,Aguardando
