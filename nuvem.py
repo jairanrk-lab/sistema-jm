@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.graph_objects as go # <--- BIBLIOTECA PARA O VELOCÍMETRO
+import plotly.graph_objects as go 
 from datetime import datetime, date, time, timedelta
 from fpdf import FPDF
 import gspread
@@ -12,7 +12,7 @@ import time as t_sleep
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide")
 
 # ==============================================================================
-# --- 2. SISTEMA DE LOGIN INTELIGENTE (COM SECRETS) 🔒 ---
+# --- 2. SISTEMA DE LOGIN INTELIGENTE ---
 # ==============================================================================
 def check_password():
     try:
@@ -27,7 +27,6 @@ def check_password():
     if st.session_state["password_correct"]:
         return True
 
-    # Interface de Login
     st.markdown("### <i class='bi bi-shield-lock-fill' style='color:#D90429'></i> Acesso Restrito - JM Detail", unsafe_allow_html=True)
     pwd = st.text_input("Digite a senha de acesso:", type="password")
     
@@ -52,94 +51,70 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.9 - VELOCÍMETRO & CALENDÁRIO" 🌑 ---
+# --- 3. ESTILO CSS "V7.0 - CORREÇÃO CALENDÁRIO & GAUGE" ---
 # ==============================================================================
 st.markdown("""
 <style>
-    /* --- IMPORTANDO FONTE MONTSERRAT --- */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
-    
-    /* --- IMPORTANDO ÍCONES BOOTSTRAP --- */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
 
-    html, body, [class*="css"] {
-        font-family: 'Montserrat', sans-serif !important;
-    }
+    html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
 
-    /* --- FUNDO GERAL (PRETO ABSOLUTO) --- */
+    /* --- FUNDO PRETO --- */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important;
     }
-    [data-testid="stSidebar"] { border-right: 1px solid #1a1a1a !important; }
+    
+    /* --- CALENDÁRIO (FORÇA BRUTA PARA REMOVER BARRINHA PRETA) --- */
+    div[data-baseweb="calendar"] { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-baseweb="calendar"] div { color: #000000 !important; }
+    div[data-baseweb="day"] { color: #000000 !important; }
+    div[data-baseweb="day"]:hover { background-color: #f0f0f0 !important; }
+    
+    /* Dia Selecionado e Hoje */
+    div[data-baseweb="calendar"] button[aria-selected="true"] { background-color: #D90429 !important; color: white !important; }
+    div[data-baseweb="calendar"] div[aria-label^="Month"] { color: #000000 !important; font-weight: bold !important; }
+    
+    /* Setas do Calendário */
+    div[data-baseweb="calendar"] svg { fill: #000000 !important; color: #000000 !important; }
 
-    /* --- AJUSTE DA LOGO NO SIDEBAR --- */
-    [data-testid="stSidebar"] img {
-        width: 100% !important;
-        transform: scale(1.15); 
-        margin-top: 0px !important;
-        margin-bottom: 20px !important;
-        filter: none !important;
-    }
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1rem !important; 
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
-
-    /* Textos Gerais */
-    h1, h2, h3, h4, h5, h6, p, label, span, div { color: white !important; }
-
-    /* Títulos e Subtítulos */
-    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; letter-spacing: -1px; }
-    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; }
-
-    /* --- CORREÇÃO TOOLTIP DO GRÁFICO --- */
-    #vg-tooltip-element { color: #000000 !important; background-color: #ffffff !important; border: 1px solid #333 !important; padding: 8px !important; border-radius: 6px !important; }
-    #vg-tooltip-element span, #vg-tooltip-element div, #vg-tooltip-element td { color: #000000 !important; }
-
-    /* --- INPUTS --- */
+    /* Inputs Gerais */
     input, textarea, select { color: #000000 !important; -webkit-text-fill-color: #000000 !important; caret-color: #000000 !important; }
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
 
-    /* ========================================================================= */
-    /* --- CORREÇÃO TOTAL DO CALENDÁRIO --- */
-    /* ========================================================================= */
-    div[data-baseweb="popover"], div[data-baseweb="popover"] > div, div[data-baseweb="calendar"] { background-color: #ffffff !important; }
-    div[data-baseweb="calendar"] div { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-baseweb="calendar"] div[aria-label^="Month"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-baseweb="calendar"] button[aria-selected="true"], div[data-baseweb="calendar"] button[aria-selected="true"] div { background-color: #D90429 !important; color: #ffffff !important; }
-    div[data-baseweb="calendar"] button svg { fill: #000000 !important; color: #000000 !important; }
-    div[data-baseweb="calendar"] button:hover { background-color: #f0f0f0 !important; cursor: pointer !important; }
-
-    /* Dropdowns (Selectbox) */
+    /* Dropdowns */
     ul[role="listbox"] { background-color: #ffffff !important; }
     li[role="option"] { color: #000000 !important; background-color: #ffffff !important; }
-    li[role="option"]:hover, li[role="option"][aria-selected="true"] { background-color: #D90429 !important; color: white !important; }
-    li[role="option"] div { color: inherit !important; }
+    li[role="option"]:hover { background-color: #D90429 !important; color: white !important; }
 
-    /* BOTÕES GERAIS */
-    div.stButton > button, div.stDownloadButton > button { background-color: #D90429 !important; color: white !important; border: none !important; font-weight: 700 !important; border-radius: 6px !important; text-transform: uppercase !important; font-family: 'Montserrat', sans-serif !important; }
-    div.stButton > button:hover, div.stDownloadButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
+    /* Títulos */
+    h1, h2, h3, h4, h5, h6, p, label, span, div { color: white !important; }
+    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; }
+    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; }
 
-    /* SIDEBAR ITENS */
-    div[role="radiogroup"] label > div:first-child { display: none !important; }
-    [data-testid="stSidebar"] div[role="radiogroup"] label { padding: 14px 20px !important; margin-bottom: 8px !important; background-color: #0a0a0a !important; border-radius: 8px !important; border: 1px solid #222 !important; color: #aaa !important; display: flex !important; width: 100% !important; transition: all 0.2s ease !important; font-weight: 600 !important; }
-    [data-testid="stSidebar"] div[role="radiogroup"] label:hover { background-color: #1a1a1a !important; border-color: #D90429 !important; transform: translateX(5px); }
-    [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background-color: #D90429 !important; color: white !important; border: none !important; }
-    [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] p { color: white !important; font-weight: bold !important; }
+    /* Botões */
+    div.stButton > button { background-color: #D90429 !important; color: white !important; border: none !important; border-radius: 6px !important; text-transform: uppercase !important; font-weight: 700 !important; }
+    div.stButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
 
-    /* CARDS */
+    /* Cards */
     .dash-card { border-radius: 12px; padding: 20px; color: white !important; margin-bottom: 15px; border: 1px solid #222; position: relative; overflow: hidden; }
     .card-icon-bg { position: absolute; right: -10px; bottom: -10px; font-size: 80px; opacity: 0.15; color: white; transform: rotate(-15deg); pointer-events: none; }
-    .history-card, .agenda-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #28a745; box-shadow: 0 4px 10px rgba(255,255,255,0.03); }
-    .agenda-card { border-left-color: #00B4DB; }
-    
+    .agenda-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #00B4DB; box-shadow: 0 4px 10px rgba(255,255,255,0.03); }
+    .history-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #28a745; }
+
+    /* Cores Cards */
     .bg-orange { background: linear-gradient(160deg, #FF9800 0%, #F57C00 100%); }
     .bg-blue { background: linear-gradient(160deg, #00B4DB 0%, #0083B0 100%); }
     .bg-red { background: linear-gradient(160deg, #D90429 0%, #8D021F 100%); }
     .bg-green { background: linear-gradient(160deg, #11998e 0%, #38ef7d 100%); }
     .bg-purple { background: linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%); }
     .bg-dark { background: linear-gradient(160deg, #222 0%, #000000 100%); border: 1px solid #444; }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] img { width: 100%; margin-bottom: 20px; }
+    [data-testid="stSidebar"] div[role="radiogroup"] label { padding: 14px 20px !important; background-color: #0a0a0a !important; border: 1px solid #222 !important; color: #aaa !important; border-radius: 8px !important; margin-bottom: 8px !important; }
+    [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background-color: #D90429 !important; color: white !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,10 +124,8 @@ def formatar_moeda(valor):
 
 @st.cache_resource
 def conectar_google_sheets():
-    # Tenta pegar o ID do Secrets, senão usa o padrão
     try: ID = st.secrets["app"]["spreadsheet_id"]
     except: ID = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
-    
     try:
         if os.path.exists("chave_google.json"): client = gspread.service_account(filename="chave_google.json")
         else: client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
@@ -445,36 +418,39 @@ with st.sidebar:
     
     # --- GRÁFICO VELOCÍMETRO (GAUGE) DA META ---
     df_meta = carregar_dados("Vendas")
+    total_vendido = 0.0
+    
     if not df_meta.empty:
         for c in ["Total"]:
             df_meta[c] = pd.to_numeric(df_meta[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
         total_vendido = df_meta[df_meta["Status"]=="Concluído"]["Total"].sum()
-        META_MENSAL = 5000.00
-        
-        # Criação do Gráfico Plotly
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = total_vendido,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "META MENSAL", 'font': {'size': 20, 'color': "white"}},
-            gauge = {
-                'axis': {'range': [None, 6000], 'tickwidth': 1, 'tickcolor': "white"},
-                'bar': {'color': "#D90429"},
-                'bgcolor': "black",
-                'borderwidth': 2,
-                'bordercolor': "#333",
-                'steps': [
-                    {'range': [0, 1500], 'color': '#333'},
-                    {'range': [1500, 3500], 'color': '#444'}],
-                'threshold': {
-                    'line': {'color': "#00B4DB", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 5000}}))
-        
-        fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"})
-        st.plotly_chart(fig, use_container_width=True)
+    
+    META_MENSAL = 5000.00
+    
+    # Criação do Gráfico Plotly (SEMPRE EXIBIDO)
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = total_vendido,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': "META MENSAL", 'font': {'size': 20, 'color': "white"}},
+        gauge = {
+            'axis': {'range': [None, 6000], 'tickwidth': 1, 'tickcolor': "white"},
+            'bar': {'color': "#D90429"},
+            'bgcolor': "black",
+            'borderwidth': 2,
+            'bordercolor': "#333",
+            'steps': [
+                {'range': [0, 1500], 'color': '#333'},
+                {'range': [1500, 3500], 'color': '#444'}],
+            'threshold': {
+                'line': {'color': "#00B4DB", 'width': 4},
+                'thickness': 0.75,
+                'value': 5000}}))
+    
+    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"}, height=300, margin=dict(l=10, r=10, t=50, b=10))
+    st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.9 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v7.0 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
