@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from datetime import datetime, date, time, timedelta  # Adicionado timedelta
+from datetime import datetime, date, time, timedelta
 from fpdf import FPDF
 import gspread
 import os
@@ -26,12 +26,12 @@ def check_password():
     if st.session_state["password_correct"]:
         return True
 
-    # Ícone Bootstrap no Login
+    # Interface de Login
     st.markdown("### <i class='bi bi-shield-lock-fill' style='color:#D90429'></i> Acesso Restrito - JM Detail", unsafe_allow_html=True)
     pwd = st.text_input("Digite a senha de acesso:", type="password")
     
     if st.button("ACESSAR SISTEMA"):
-        # LÓGICA SEGURA: Busca a senha no arquivo secrets.toml
+        # LÓGICA SEGURA: Busca a senha no arquivo secrets.toml (seção [app])
         try:
             senha_correta = st.secrets["app"]["password"]
             
@@ -43,9 +43,9 @@ def check_password():
             else:
                 st.error("Senha incorreta.")
         except FileNotFoundError:
-            st.error("Erro: Arquivo secrets.toml não encontrado.")
+            st.error("Erro: Arquivo secrets.toml não encontrado (Local).")
         except KeyError:
-            st.error("Erro: Senha não configurada no secrets.toml (seção [app]).")
+            st.error("Erro: Configuração de senha não encontrada no Secrets.")
             
     return False
 
@@ -53,7 +53,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.42" (ESTILO MAXTON + ÍCONES DINÂMICOS) 🌑 ---
+# --- 3. ESTILO CSS "V6.5 - CORREÇÃO CALENDÁRIO" 🌑 ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -111,15 +111,13 @@ st.markdown("""
         margin-top: 10px;
     }
 
-    /* --- CORREÇÃO TOOLTIP DO GRÁFICO (TEXTO PRETO) --- */
+    /* --- CORREÇÃO TOOLTIP DO GRÁFICO --- */
     #vg-tooltip-element {
         color: #000000 !important;
         background-color: #ffffff !important;
         border: 1px solid #333 !important;
-        font-family: 'Montserrat', sans-serif !important;
         padding: 8px !important;
         border-radius: 6px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
     #vg-tooltip-element span, #vg-tooltip-element div, #vg-tooltip-element td {
         color: #000000 !important;
@@ -130,36 +128,69 @@ st.markdown("""
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
         caret-color: #000000 !important; 
-        font-family: 'Montserrat', sans-serif !important;
     }
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { 
+        background-color: #ffffff !important; 
+        border: 1px solid #333 !important; 
+    }
 
-    /* --- CALENDÁRIO & DROPDOWNS --- */
-    div[data-baseweb="calendar"], div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-baseweb="calendar"] div, div[data-baseweb="select"] div, li[role="option"] div { color: #000000 !important; font-family: 'Montserrat', sans-serif !important; }
-    div[data-baseweb="calendar"] button { color: #000000 !important; }
-    div[data-baseweb="select"] svg { fill: #000000 !important; }
-    li[role="option"] { background-color: #ffffff !important; }
-    div[data-baseweb="calendar"] button[aria-selected="true"], li[role="option"][aria-selected="true"], li[role="option"]:hover { background-color: #D90429 !important; color: white !important; }
-    div[data-baseweb="calendar"] button[aria-selected="true"] { color: white !important; }
-    li[role="option"]:hover div, li[role="option"][aria-selected="true"] div { color: white !important; }
+    /* --- CORREÇÃO DEFINITIVA DO CALENDÁRIO E MENUS --- */
+    /* Garante que o container flutuante (popover) seja branco */
+    div[data-baseweb="popover"], div[data-baseweb="popover"] > div {
+        background-color: #ffffff !important;
+        border: none !important;
+    }
 
-    /* BOTÕES GERAIS (TEXTO LIMPO) */
+    /* Garante que o calendário interno seja branco */
+    div[data-baseweb="calendar"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        width: 100% !important;
+    }
+
+    /* Força textos internos do calendário (Mês, Dias) a serem pretos */
+    div[data-baseweb="calendar"] div, 
+    div[data-baseweb="calendar"] h1, 
+    div[data-baseweb="calendar"] h2, 
+    div[data-baseweb="calendar"] h3, 
+    div[data-baseweb="calendar"] button {
+        color: #000000 !important;
+    }
+
+    /* Remove fundos estranhos dos botões de navegação do calendário */
+    div[data-baseweb="calendar"] button {
+        background-color: transparent !important;
+    }
+
+    /* Estilo do dia selecionado e Hover (Vermelho da Marca) */
+    div[data-baseweb="calendar"] button[aria-selected="true"],
+    div[data-baseweb="calendar"] button:hover {
+        background-color: #D90429 !important;
+        color: white !important;
+    }
+    
+    /* Dropdowns (Selectbox) */
+    ul[role="listbox"] { background-color: #ffffff !important; }
+    li[role="option"] { color: #000000 !important; background-color: #ffffff !important; }
+    li[role="option"]:hover, li[role="option"][aria-selected="true"] {
+        background-color: #D90429 !important;
+        color: white !important;
+    }
+    li[role="option"] div { color: inherit !important; }
+
+    /* BOTÕES GERAIS */
     div.stButton > button, div.stDownloadButton > button { 
         background-color: #D90429 !important; 
         color: white !important; 
         border: none !important; 
         font-weight: 700 !important; 
         border-radius: 6px !important; 
-        font-family: 'Montserrat', sans-serif !important;
-        letter-spacing: 0.5px !important;
         text-transform: uppercase !important; 
-        font-size: 14px !important;
-        padding: 10px 24px !important;
+        font-family: 'Montserrat', sans-serif !important;
     }
     div.stButton > button:hover, div.stDownloadButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
 
-    /* --- SIDEBAR ITENS (BOTÕES DO MENU UNIFORMES) --- */
+    /* SIDEBAR ITENS */
     div[role="radiogroup"] label > div:first-child { display: none !important; }
     [data-testid="stSidebar"] div[role="radiogroup"] label { 
         padding: 14px 20px !important; 
@@ -171,21 +202,16 @@ st.markdown("""
         display: flex !important; 
         width: 100% !important;
         transition: all 0.2s ease !important; 
-        font-family: 'Montserrat', sans-serif !important;
         font-weight: 600 !important;
-        letter-spacing: 1px !important;
     }
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover { background-color: #1a1a1a !important; border-color: #D90429 !important; transform: translateX(5px); }
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background-color: #D90429 !important; color: white !important; border: none !important; }
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] p { color: white !important; font-weight: bold !important; }
 
-    /* CARDS ESTILIZADOS */
-    .dash-card { border-radius: 12px; padding: 20px; color: white !important; margin-bottom: 15px; border: 1px solid #222; font-family: 'Montserrat', sans-serif !important; position: relative; overflow: hidden; }
-    
-    /* Ícone de fundo translúcido nos cards */
+    /* CARDS */
+    .dash-card { border-radius: 12px; padding: 20px; color: white !important; margin-bottom: 15px; border: 1px solid #222; position: relative; overflow: hidden; }
     .card-icon-bg { position: absolute; right: -10px; bottom: -10px; font-size: 80px; opacity: 0.15; color: white; transform: rotate(-15deg); pointer-events: none; }
-
-    .history-card, .agenda-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #28a745; box-shadow: 0 4px 10px rgba(255,255,255,0.03); font-family: 'Montserrat', sans-serif !important;}
+    .history-card, .agenda-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #28a745; box-shadow: 0 4px 10px rgba(255,255,255,0.03); }
     .agenda-card { border-left-color: #00B4DB; }
     
     .bg-orange { background: linear-gradient(160deg, #FF9800 0%, #F57C00 100%); }
@@ -518,7 +544,7 @@ with st.sidebar:
         progresso = min(total_vendido / META_MENSAL, 1.0)
         st.markdown(f"""<div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;"><p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês</p><p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">{formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span></p></div>""", unsafe_allow_html=True)
         st.progress(progresso)
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.42 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.5 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
