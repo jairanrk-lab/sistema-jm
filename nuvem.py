@@ -31,10 +31,8 @@ def check_password():
     pwd = st.text_input("Digite a senha de acesso:", type="password")
     
     if st.button("ACESSAR SISTEMA"):
-        # LÓGICA SEGURA: Busca a senha no arquivo secrets.toml (seção [app])
         try:
             senha_correta = st.secrets["app"]["password"]
-            
             if pwd == senha_correta: 
                 st.session_state["password_correct"] = True
                 try: st.query_params["acesso_liberado"] = "sim_mestre"
@@ -53,14 +51,14 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.5 - CORREÇÃO CALENDÁRIO" 🌑 ---
+# --- 3. ESTILO CSS "V6.7 - CALENDÁRIO 100% BRANCO" 🌑 ---
 # ==============================================================================
 st.markdown("""
 <style>
     /* --- IMPORTANDO FONTE MONTSERRAT --- */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
     
-    /* --- IMPORTANDO ÍCONES BOOTSTRAP (PREMIUM) --- */
+    /* --- IMPORTANDO ÍCONES BOOTSTRAP --- */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
 
     html, body, [class*="css"] {
@@ -90,120 +88,74 @@ st.markdown("""
     /* Textos Gerais */
     h1, h2, h3, h4, h5, h6, p, label, span, div { color: white !important; }
 
-    /* Estilo para os Títulos com Ícones (H1 Customizado) */
-    .custom-title {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        font-weight: 700;
-        font-size: 2.2rem;
-        margin-bottom: 20px;
-        letter-spacing: -1px;
-    }
-     /* Estilo para os Subtítulos com Ícones (H3 Customizado) */
-    .custom-subtitle {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 600;
-        font-size: 1.5rem;
-        margin-bottom: 15px;
-        margin-top: 10px;
-    }
+    /* Títulos e Subtítulos */
+    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; letter-spacing: -1px; }
+    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; }
 
     /* --- CORREÇÃO TOOLTIP DO GRÁFICO --- */
-    #vg-tooltip-element {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-        border: 1px solid #333 !important;
-        padding: 8px !important;
-        border-radius: 6px !important;
-    }
-    #vg-tooltip-element span, #vg-tooltip-element div, #vg-tooltip-element td {
-        color: #000000 !important;
-    }
+    #vg-tooltip-element { color: #000000 !important; background-color: #ffffff !important; border: 1px solid #333 !important; padding: 8px !important; border-radius: 6px !important; }
+    #vg-tooltip-element span, #vg-tooltip-element div, #vg-tooltip-element td { color: #000000 !important; }
 
     /* --- INPUTS --- */
-    input, textarea, select { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        caret-color: #000000 !important; 
-    }
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { 
-        background-color: #ffffff !important; 
-        border: 1px solid #333 !important; 
-    }
+    input, textarea, select { color: #000000 !important; -webkit-text-fill-color: #000000 !important; caret-color: #000000 !important; }
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
 
-    /* --- CORREÇÃO DEFINITIVA DO CALENDÁRIO E MENUS --- */
-    /* Garante que o container flutuante (popover) seja branco */
-    div[data-baseweb="popover"], div[data-baseweb="popover"] > div {
-        background-color: #ffffff !important;
-        border: none !important;
-    }
-
-    /* Garante que o calendário interno seja branco */
+    /* ========================================================================= */
+    /* --- CORREÇÃO TOTAL DO CALENDÁRIO (FIX BARRA PRETA) --- */
+    /* ========================================================================= */
+    
+    /* 1. Container Principal do Calendário (Pop-up) */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
     div[data-baseweb="calendar"] {
         background-color: #ffffff !important;
+        border: 1px solid #ccc !important;
+    }
+
+    /* 2. Força TODO texto dentro do calendário a ser PRETO */
+    div[data-baseweb="calendar"] * {
         color: #000000 !important;
-        width: 100% !important;
+        background-color: transparent !important; /* Remove fundos pretos herdados */
     }
 
-    /* Força textos internos do calendário (Mês, Dias) a serem pretos */
-    div[data-baseweb="calendar"] div, 
-    div[data-baseweb="calendar"] h1, 
-    div[data-baseweb="calendar"] h2, 
-    div[data-baseweb="calendar"] h3, 
-    div[data-baseweb="calendar"] button {
-        color: #000000 !important;
+    /* 3. Container do Cabeçalho (Onde ficam os dias da semana e botões) */
+    /* Essa regra especificamente mata a barra preta */
+    div[data-baseweb="calendar"] div[aria-label^="Month"], 
+    div[data-baseweb="calendar"] div[role="grid"] {
+        background-color: #ffffff !important;
     }
 
-    /* Remove fundos estranhos dos botões de navegação do calendário */
-    div[data-baseweb="calendar"] button {
-        background-color: transparent !important;
-    }
-
-    /* Estilo do dia selecionado e Hover (Vermelho da Marca) */
-    div[data-baseweb="calendar"] button[aria-selected="true"],
-    div[data-baseweb="calendar"] button:hover {
+    /* 4. Botão do Dia Selecionado (Vermelho) */
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
         background-color: #D90429 !important;
         color: white !important;
     }
     
+    /* 5. Hover nos dias */
+    div[data-baseweb="calendar"] button:hover {
+        background-color: #f0f0f0 !important;
+    }
+
+    /* 6. Setas de Navegação (Mês Anterior/Próximo) */
+    div[data-baseweb="calendar"] button svg {
+        fill: #000000 !important;
+        color: #000000 !important;
+    }
+    /* ========================================================================= */
+
     /* Dropdowns (Selectbox) */
     ul[role="listbox"] { background-color: #ffffff !important; }
     li[role="option"] { color: #000000 !important; background-color: #ffffff !important; }
-    li[role="option"]:hover, li[role="option"][aria-selected="true"] {
-        background-color: #D90429 !important;
-        color: white !important;
-    }
+    li[role="option"]:hover, li[role="option"][aria-selected="true"] { background-color: #D90429 !important; color: white !important; }
     li[role="option"] div { color: inherit !important; }
 
     /* BOTÕES GERAIS */
-    div.stButton > button, div.stDownloadButton > button { 
-        background-color: #D90429 !important; 
-        color: white !important; 
-        border: none !important; 
-        font-weight: 700 !important; 
-        border-radius: 6px !important; 
-        text-transform: uppercase !important; 
-        font-family: 'Montserrat', sans-serif !important;
-    }
+    div.stButton > button, div.stDownloadButton > button { background-color: #D90429 !important; color: white !important; border: none !important; font-weight: 700 !important; border-radius: 6px !important; text-transform: uppercase !important; font-family: 'Montserrat', sans-serif !important; }
     div.stButton > button:hover, div.stDownloadButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
 
     /* SIDEBAR ITENS */
     div[role="radiogroup"] label > div:first-child { display: none !important; }
-    [data-testid="stSidebar"] div[role="radiogroup"] label { 
-        padding: 14px 20px !important; 
-        margin-bottom: 8px !important; 
-        background-color: #0a0a0a !important; 
-        border-radius: 8px !important; 
-        border: 1px solid #222 !important; 
-        color: #aaa !important; 
-        display: flex !important; 
-        width: 100% !important;
-        transition: all 0.2s ease !important; 
-        font-weight: 600 !important;
-    }
+    [data-testid="stSidebar"] div[role="radiogroup"] label { padding: 14px 20px !important; margin-bottom: 8px !important; background-color: #0a0a0a !important; border-radius: 8px !important; border: 1px solid #222 !important; color: #aaa !important; display: flex !important; width: 100% !important; transition: all 0.2s ease !important; font-weight: 600 !important; }
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover { background-color: #1a1a1a !important; border-color: #D90429 !important; transform: translateX(5px); }
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background-color: #D90429 !important; color: white !important; border: none !important; }
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] p { color: white !important; font-weight: bold !important; }
@@ -337,30 +289,17 @@ def page_dashboard():
     with col_g:
         st.markdown('<h3 class="custom-subtitle"><i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance</h3>', unsafe_allow_html=True)
         if not df_v.empty:
-            # --- GRÁFICO ESTILO "MAXTON" (CURVAS + NEON) ---
             base = alt.Chart(df_v).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
-            
-            # Barras Neon
             bars = base.mark_bar(size=40, cornerRadiusEnd=10).encode(
                 y=alt.Y('Total', axis=None),
-                # Degradê simulado com cores vibrantes
                 color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None),
                 tooltip=['Data', 'Cliente', 'Carro', 'Total', 'Lucro Liquido']
             )
-            
-            # Linha Curva (Interpolate = Natural para fazer ondas)
-            line = base.mark_line(
-                color='#0575E6', # Azul elétrico
-                strokeWidth=4, 
-                interpolate='natural' # AQUI ESTÁ O SEGREDO DA CURVA SUAVE
-            ).encode(
+            line = base.mark_line(color='#0575E6', strokeWidth=4, interpolate='natural').encode(
                 y=alt.Y('Lucro Liquido', axis=None),
                 tooltip=['Data', 'Lucro Liquido']
             )
-            
-            chart = alt.layer(bars, line).properties(
-                height=380, background='transparent'
-            ).configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
+            chart = alt.layer(bars, line).properties(height=380, background='transparent').configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
             st.altair_chart(chart, use_container_width=True)
     with col_a:
         st.markdown('<h3 class="custom-subtitle"><i class="bi bi-calendar-event" style="color: white;"></i> Próximos na Agenda</h3>', unsafe_allow_html=True)
@@ -544,7 +483,7 @@ with st.sidebar:
         progresso = min(total_vendido / META_MENSAL, 1.0)
         st.markdown(f"""<div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;"><p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês</p><p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">{formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span></p></div>""", unsafe_allow_html=True)
         st.progress(progresso)
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.5 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.7 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
