@@ -12,7 +12,7 @@ import time as t_sleep
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide")
 
 # ==============================================================================
-# --- 2. SISTEMA DE LOGIN INTELIGENTE ---
+# --- 2. SISTEMA DE LOGIN ---
 # ==============================================================================
 def check_password():
     try:
@@ -40,10 +40,8 @@ def check_password():
                 st.rerun()
             else:
                 st.error("Senha incorreta.")
-        except FileNotFoundError:
-            st.error("Erro: Arquivo secrets.toml não encontrado (Local).")
-        except KeyError:
-            st.error("Erro: Configuração de senha não encontrada no Secrets.")
+        except:
+            st.error("Erro na configuração de senhas.")
             
     return False
 
@@ -51,148 +49,143 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V8.0 - RESGATE VISUAL TOTAL" ---
+# --- 3. ESTILO CSS "V9.0 - MENU LARGO & FONTE MODERNA" ---
 # ==============================================================================
 st.markdown("""
 <style>
+    /* Importando a fonte Montserrat (Moderna e Arredondada) */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
 
-    html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
+    /* Forçando a fonte em TUDO */
+    html, body, [class*="css"], font, span, div, p, h1, h2, h3, h4, h5, h6 { 
+        font-family: 'Montserrat', sans-serif !important; 
+    }
 
-    /* --- FUNDO PRETO GLOBAL --- */
+    /* Fundo Preto Global */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important;
     }
 
     /* ============================================================ */
-    /* --- CORREÇÃO DA SIDEBAR (LARGURA E BOTÕES) --- */
+    /* --- SIDEBAR (MENU LATERAL) TURBINADO --- */
     /* ============================================================ */
     
-    /* 1. Forçar largura mínima para a sidebar não "amassar" */
+    /* Largura fixa da sidebar */
     [data-testid="stSidebar"] {
-        min-width: 320px !important;
-        max-width: 320px !important;
+        min-width: 300px !important;
+        max-width: 350px !important;
     }
 
-    /* 2. Esconder as "bolinhas" (Radio Buttons) */
+    /* Ajuste do container interno para usar todo o espaço */
+    [data-testid="stSidebar"] .block-container {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* Esconder bolinhas do rádio */
     [data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child {
         display: none !important;
     }
 
-    /* 3. Estilizar o texto como BOTÃO RETANGULAR */
+    /* ESTILO DOS BOTÕES DO MENU (BEM LARGOS) */
     [data-testid="stSidebar"] div[role="radiogroup"] label {
-        padding: 12px 20px !important;
+        padding: 15px 10px !important; /* Mais altura */
         background-color: #111111 !important;
         border: 1px solid #333 !important;
         color: #ddd !important;
-        border-radius: 8px !important;
-        margin-bottom: 8px !important;
-        width: 100% !important;
+        border-radius: 10px !important; /* Bordas mais arredondadas */
+        margin-bottom: 10px !important;
+        width: 100% !important; /* Ocupa 100% da largura */
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        transition: all 0.2s ease !important;
     }
 
-    /* 4. Texto dentro do botão (sem quebra de linha) */
+    /* Texto dentro do botão (MAIOR E MAIS FORTE) */
     [data-testid="stSidebar"] div[role="radiogroup"] label p {
-        font-size: 15px !important;
-        font-weight: 600 !important;
+        font-size: 18px !important; /* Fonte maior */
+        font-weight: 700 !important; /* Negrito */
+        letter-spacing: 1px !important;
         margin: 0 !important;
-        white-space: nowrap !important; /* Impede quebra de linha */
     }
 
-    /* 5. Hover e Selecionado */
+    /* Efeito ao passar o mouse */
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
         border-color: #D90429 !important;
+        background-color: #1a1a1a !important;
         color: white !important;
-        cursor: pointer !important;
+        transform: scale(1.02); /* Leve aumento */
     }
+
+    /* Botão Selecionado */
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] {
-        background-color: #D90429 !important;
+        background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important;
         color: white !important;
         border-color: #D90429 !important;
+        box-shadow: 0 0 15px rgba(217, 4, 41, 0.4) !important;
     }
 
-    /* Logo Centralizada */
+    /* Logo Sidebar */
     [data-testid="stSidebar"] img {
-        display: block !important;
-        margin: 0 auto 20px auto !important;
-        max-width: 90% !important;
+        margin-bottom: 30px !important;
+        max-width: 95% !important;
     }
 
     /* ============================================================ */
-    /* --- CORREÇÃO DO DROPDOWN (TEXTO INVISÍVEL) --- */
+    /* --- OUTROS AJUSTES VISUAIS --- */
     /* ============================================================ */
-    /* Menu Suspenso (Lista de opções) */
-    div[role="listbox"] ul {
+    
+    /* Inputs e Selects */
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input, div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
-    }
-    /* Texto das opções (Preto para aparecer no fundo branco) */
-    div[role="listbox"] li {
         color: #000000 !important;
-        background-color: #ffffff !important;
+        border-radius: 8px !important;
+        border: 1px solid #ccc !important;
+        font-weight: 600 !important;
     }
-    /* Hover nas opções */
-    div[role="listbox"] li:hover {
-        background-color: #D90429 !important;
-        color: white !important;
-    }
-
-    /* ============================================================ */
-    /* --- CORREÇÃO DO CALENDÁRIO --- */
-    /* ============================================================ */
-    /* Container Geral do Calendário (Tentativa de cobrir o fundo preto) */
+    
+    /* Calendário */
     div[data-baseweb="calendar"] {
         background-color: #ffffff !important;
+        border-radius: 10px !important;
         padding: 10px !important;
-        border-radius: 8px !important;
     }
-    div[data-baseweb="calendar"] * {
-        color: #000000 !important;
-    }
-    div[data-baseweb="day"]:hover {
-        background-color: #eee !important;
-    }
-    /* Dia selecionado */
+    div[data-baseweb="calendar"] * { color: #000000 !important; }
     div[data-baseweb="calendar"] button[aria-selected="true"] {
         background-color: #D90429 !important;
         color: white !important;
     }
 
-    /* Inputs (Caixas de texto) */
-    input, textarea, select { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { 
-        background-color: #ffffff !important; 
-        border: 1px solid #333 !important; 
-    }
-
-    /* Textos Gerais Brancos */
-    h1, h2, h3, h4, h5, h6, p, span, div, label { color: white; }
+    /* Títulos */
+    .custom-title { font-size: 2.5rem; font-weight: 800; color: white !important; margin-bottom: 25px; }
     
-    /* Exceções para textos que precisam ser pretos (Calendário e Select) */
-    div[data-baseweb="calendar"] *, div[data-baseweb="select"] *, div[role="listbox"] * { color: #000000 !important; }
-
-    /* Custom Titles e Botões */
-    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; color: white !important; }
-    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; color: white !important; }
-    div.stButton > button { background-color: #D90429 !important; color: white !important; border: none !important; border-radius: 6px !important; text-transform: uppercase !important; font-weight: 700 !important; width: 100% !important; }
-    div.stButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
+    /* Botões de Ação (Confirmar, etc) */
+    div.stButton > button {
+        background-color: #D90429 !important;
+        color: white !important;
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        height: 50px !important;
+        border: none !important;
+    }
+    div.stButton > button:hover { background-color: #ff1f4b !important; }
 
     /* Cards */
-    .dash-card { border-radius: 12px; padding: 20px; color: white !important; margin-bottom: 15px; border: 1px solid #222; position: relative; overflow: hidden; }
-    .card-icon-bg { position: absolute; right: -10px; bottom: -10px; font-size: 80px; opacity: 0.15; color: white; transform: rotate(-15deg); pointer-events: none; }
-    .agenda-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #00B4DB; box-shadow: 0 4px 10px rgba(255,255,255,0.03); }
-    .history-card { background-color: #111111 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 5px solid #28a745; }
+    .dash-card { border-radius: 15px; padding: 25px; color: white; margin-bottom: 20px; border: 1px solid #333; position: relative; overflow: hidden; }
+    .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 6px solid #00B4DB; }
+    .history-card { background-color: #161616 !important; border-radius: 12px; padding: 20px; margin-bottom: 15px; }
 
-    /* Cores Cards */
-    .bg-orange { background: linear-gradient(160deg, #FF9800 0%, #F57C00 100%); }
-    .bg-blue { background: linear-gradient(160deg, #00B4DB 0%, #0083B0 100%); }
-    .bg-red { background: linear-gradient(160deg, #D90429 0%, #8D021F 100%); }
-    .bg-green { background: linear-gradient(160deg, #11998e 0%, #38ef7d 100%); }
-    .bg-purple { background: linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%); }
-    .bg-dark { background: linear-gradient(160deg, #222 0%, #000000 100%); border: 1px solid #444; }
+    /* Cores de Fundo */
+    .bg-orange { background: linear-gradient(145deg, #FF9800, #F57C00); }
+    .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
+    .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
+    .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
+    .bg-purple { background: linear-gradient(145deg, #8E2DE2, #4A00E0); }
+    .bg-dark { background: linear-gradient(145deg, #222, #111); }
 
 </style>
 """, unsafe_allow_html=True)
@@ -278,8 +271,6 @@ def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
         pdf.cell(140, 10, txt=txt(t_s), border=1); pdf.cell(50, 10, txt=txt(f"R$ {v:.2f}"), border=1, ln=True, align='C')
     pdf.ln(5); pdf.set_font("Arial", "B", 14); pdf.cell(140, 10, txt="TOTAL", align='R')
     pdf.cell(50, 10, txt=txt(f"R$ {total:.2f}"), border=1, align='C')
-    pdf.ln(20)
-    if os.path.exists("assinatura.png"): pdf.image("assinatura.png", x=130, y=pdf.get_y(), w=40); pdf.ln(2); pdf.set_font("Arial", "I", 8); pdf.cell(0, 5, txt=txt("Assinado Digitalmente por JM Detail"), ln=True, align='R')
     return pdf.output(dest="S").encode("latin-1")
 
 # --- PÁGINAS ---
@@ -307,7 +298,7 @@ def page_dashboard():
     st.write("---")
     col_g, col_a = st.columns([2, 1])
     with col_g:
-        st.markdown('<h3 class="custom-subtitle"><i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance</h3>', unsafe_allow_html=True)
+        st.markdown('<h3><i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance</h3>', unsafe_allow_html=True)
         if not df_v.empty:
             base = alt.Chart(df_v).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
             bars = base.mark_bar(size=40, cornerRadiusEnd=10).encode(
@@ -322,28 +313,24 @@ def page_dashboard():
             chart = alt.layer(bars, line).properties(height=380, background='transparent').configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
             st.altair_chart(chart, use_container_width=True)
     with col_a:
-        st.markdown('<h3 class="custom-subtitle"><i class="bi bi-calendar-event" style="color: white;"></i> Próximos na Agenda</h3>', unsafe_allow_html=True)
+        st.markdown('<h3><i class="bi bi-calendar-event" style="color: white;"></i> Próximos na Agenda</h3>', unsafe_allow_html=True)
         if df_a.empty: st.info("Agenda livre.")
         else:
             for _, r in df_a.tail(4).iloc[::-1].iterrows():
-                cat_atual = r.get("Categoria", "")
-                icone_veiculo = obter_icone_veiculo(cat_atual)
+                icone_veiculo = obter_icone_veiculo(r.get("Categoria", ""))
                 st.markdown(f"""
                 <div class="agenda-card">
                     <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB"><i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}</div>
                     <div style="font-size:18px; font-weight:bold; margin-bottom:5px">{icone_veiculo} {r["Veiculo"]}</div>
                     <div style="color:#aaa; font-size:14px; margin-bottom:5px"><i class="bi bi-person-fill"></i> {r["Cliente"]}</div>
-                    <div style="font-size:13px; color:#ddd; margin-bottom:10px"><i class="bi bi-tools"></i> {r["Servicos"]}</div>
                     <div style="font-size:20px; font-weight:bold; color:#39FF14">{formatar_moeda(float(r["Total"]))}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
 def page_financeiro():
     st.markdown('<h1 class="custom-title"><i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira</h1>', unsafe_allow_html=True)
-    st.info("💡 Como funciona: O saldo 'A Pagar' soma apenas o que está 'Pendente' na planilha.")
     df_v = carregar_dados("Vendas")
-    comissao_pendente = 0.0
-    fundo_caixa_acumulado = 0.0
+    comissao_pendente = 0.0; fundo_caixa_acumulado = 0.0
     if not df_v.empty:
         if "Status Comissao" not in df_v.columns: df_v["Status Comissao"] = "Pendente"
         for c in ["Valor Comissao", "Fundo Caixa"]:
@@ -358,16 +345,14 @@ def page_financeiro():
             if st.button("CONFIRMAR PAGAMENTO REALIZADO", use_container_width=True):
                 sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados_planilha = ws.get_all_records()
                 try:
-                    header = ws.row_values(1); col_idx = header.index("Status Comissao") + 1; updates = []
+                    header = ws.row_values(1); col_idx = header.index("Status Comissao") + 1
                     for i, linha in enumerate(dados_planilha):
                         v_float = pd.to_numeric(str(linha.get("Valor Comissao", "0")).replace('R$', '').replace(',', '.'), errors='coerce')
                         if v_float > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
                     st.success("Pagamento registrado!"); st.rerun()
-                except ValueError: st.error("Erro: Coluna 'Status Comissao' não encontrada.")
+                except: st.error("Erro na atualização.")
     with c2:
         st.markdown(f"""<div class="dash-card bg-dark"><i class="bi bi-safe2-fill card-icon-bg"></i><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:32px;font-weight:bold">{formatar_moeda(fundo_caixa_acumulado)}</div><p style="margin-top:10px; opacity:0.8">Acumulado total para insumos.</p></div>""", unsafe_allow_html=True)
-    st.write("---"); st.subheader("Extrato de Comissões"); 
-    if not df_v.empty: st.dataframe(df_v[df_v["Status Comissao"] != "Pago"][["Data", "Carro", "Valor Comissao", "Status Comissao"]], use_container_width=True)
 
 def page_agendamento():
     st.markdown('<h1 class="custom-title"><i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada</h1>', unsafe_allow_html=True)
@@ -398,7 +383,7 @@ def page_agendamento():
                 if extra_n: servicos_finais += f" (+ {extra_n})"
                 dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": servicos_finais, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat}
                 if salvar_no_google("Agendamentos", dados): st.success("Agendado com sucesso!"); st.balloons()
-                else: st.error("ERRO AO CONECTAR: Verifique se criou a coluna 'Categoria' na aba Agendamentos.")
+                else: st.error("ERRO AO CONECTAR: Verifique se criou a coluna 'Categoria' na aba Agendamentos da Planilha.")
             else: st.error("Preencha o cliente e pelo menos um serviço!")
     with tab_list:
         df_a = carregar_dados("Agendamentos")
@@ -407,12 +392,10 @@ def page_agendamento():
             for i, r in df_a.iterrows():
                 with st.container():
                     total_val = float(r["Total"])
-                    cat_atual = r.get("Categoria", "")
-                    icone_veiculo = obter_icone_veiculo(cat_atual)
                     st.markdown(f"""
                     <div class="agenda-card">
                         <div style="margin-bottom:8px; font-weight:bold; color:#00B4DB"><i class="bi bi-calendar4-week"></i> {r["Data"]} &nbsp;|&nbsp; <i class="bi bi-clock"></i> {r["Hora"]}</div>
-                        <div style="font-size:18px; font-weight:bold; margin-bottom:5px">{icone_veiculo} {r["Veiculo"]}</div>
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:5px">{obter_icone_veiculo(r.get("Categoria", ""))} {r["Veiculo"]}</div>
                         <div style="color:#aaa; font-size:14px; margin-bottom:5px"><i class="bi bi-person-fill"></i> {r["Cliente"]}</div>
                         <div style="font-size:13px; color:#ddd; margin-bottom:10px"><i class="bi bi-tools"></i> {r["Servicos"]}</div>
                         <div style="font-size:20px; font-weight:bold; color:#39FF14">{formatar_moeda(total_val)}</div>
@@ -421,34 +404,25 @@ def page_agendamento():
                     c1, c2 = st.columns(2)
                     with c1:
                         if st.button(f"CONCLUIR SERVIÇO", key=f"efet_{i}"):
-                            # 1. Cálculos Financeiros
                             fundo_caixa = total_val * 0.10
                             comissao = total_val * 0.40 if "Irmão" in r["Executor"] else 0.0
                             lucro_liq = total_val - fundo_caixa - comissao
-                            
-                            # 2. Lógica de Retorno (Vitrificação)
                             data_retorno_str = ""
                             if "vitrific" in r["Servicos"].lower():
                                 try:
                                     dt_obj = datetime.strptime(r["Data"], "%d/%m/%Y")
-                                    dt_retorno = dt_obj + timedelta(days=180) # 6 Meses
-                                    data_retorno_str = dt_retorno.strftime("%d/%m/%Y")
+                                    data_retorno_str = (dt_obj + timedelta(days=180)).strftime("%d/%m/%Y")
                                     st.toast(f"📅 Retorno de Vitrificação: {data_retorno_str}", icon="💎")
                                 except: pass
 
-                            # 3. Montagem do Objeto (Agora com Data Retorno)
                             nova_venda = {
                                 "Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], 
                                 "Total": total_val, "Status": "Concluído", "Pagamento": "-", "Funcionario": r["Executor"], 
                                 "Valor Comissao": comissao, "Fundo Caixa": fundo_caixa, "Lucro Liquido": lucro_liq, "Agendamentos": "",
-                                "Status Comissao": "Pendente", "Categoria": r.get("Categoria", ""),
-                                "Data Retorno": data_retorno_str
+                                "Status Comissao": "Pendente", "Categoria": r.get("Categoria", ""), "Data Retorno": data_retorno_str
                             }
-                            
-                            # 4. Transação
                             if salvar_no_google("Vendas", nova_venda):
                                 if excluir_agendamento(i): st.success("Serviço Concluído!"); t_sleep.sleep(1.5); st.rerun()
-                                else: st.warning("Salvo em Vendas, mas erro ao limpar da Agenda.")
                             else: st.error("ERRO: Verifique se criou a coluna 'Categoria' e 'Data Retorno' na aba Vendas.")
                     with c2:
                         precos_pdf = {r["Servicos"]: total_val}
@@ -470,68 +444,53 @@ def page_historico():
     if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
     for _, r in df_f.iterrows():
         cor = "#28a745" if r['Status'] == "Concluído" else "#ffc107"
-        total_formatado = formatar_moeda(float(r["Total"]))
-        cat_atual = r.get("Categoria", "")
-        icone_veiculo = obter_icone_veiculo(cat_atual)
         st.markdown(f"""
-        <div class="history-card" style="border-left-color: {cor}">
+        <div class="history-card" style="border-left: 5px solid {cor}">
             <div style="display: flex; justify-content: space-between">
                 <div>
-                    <h3 style="margin:0">{icone_veiculo} {r["Carro"]}</h3>
+                    <h3 style="margin:0">{obter_icone_veiculo(r.get("Categoria", ""))} {r["Carro"]}</h3>
                     <p style="margin:5px 0; color:#aaa"><i class="bi bi-person"></i> {r["Cliente"]} &nbsp;•&nbsp; <i class="bi bi-calendar"></i> {r["Data"]}</p>
                     <small style="color:#666"><i class="bi bi-tools"></i> {r["Serviços"]}</small>
                 </div>
                 <div style="text-align: right">
-                    <h2 style="color: #38ef7d; margin:0">{total_formatado}</h2>
+                    <h2 style="color: #38ef7d; margin:0">{formatar_moeda(float(r["Total"]))}</h2>
                     <span style="font-size:12px; text-transform:uppercase; letter-spacing:1px; background:#222; padding:3px 8px; border-radius:4px">{r["Status"]}</span>
                 </div>
             </div>
         </div>""", unsafe_allow_html=True)
 
-# --- MENU ---
+# --- MENU LATERAL ---
 with st.sidebar:
     if os.path.exists("logo_sidebar.png"): st.image("logo_sidebar.png", use_container_width=True)
     elif os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
     
-    # Menu com nomes curtos para garantir que caibam
+    # Menu com nomes curtos
     menu = st.radio("NAVEGAÇÃO", ["DASHBOARD", "AGENDAMENTO", "FINANCEIRO", "DESPESAS", "HISTÓRICO"], label_visibility="collapsed")
     st.write("---")
     
-    # --- GRÁFICO VELOCÍMETRO (GAUGE) DA META ---
+    # --- GRÁFICO VELOCÍMETRO (GAUGE) ---
     df_meta = carregar_dados("Vendas")
     total_vendido = 0.0
-    
     if not df_meta.empty:
         for c in ["Total"]:
             df_meta[c] = pd.to_numeric(df_meta[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
         total_vendido = df_meta[df_meta["Status"]=="Concluído"]["Total"].sum()
     
     META_MENSAL = 5000.00
-    
-    # Criação do Gráfico Plotly
     fig = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = total_vendido,
+        mode = "gauge+number", value = total_vendido,
         domain = {'x': [0, 1], 'y': [0, 1]},
-        title = {'text': "META MENSAL", 'font': {'size': 20, 'color': "white"}},
+        title = {'text': "META MENSAL", 'font': {'size': 18, 'color': "white"}},
         gauge = {
             'axis': {'range': [None, 6000], 'tickwidth': 1, 'tickcolor': "white"},
-            'bar': {'color': "#D90429"},
-            'bgcolor': "black",
-            'borderwidth': 2,
-            'bordercolor': "#333",
-            'steps': [
-                {'range': [0, 1500], 'color': '#333'},
-                {'range': [1500, 3500], 'color': '#444'}],
-            'threshold': {
-                'line': {'color': "#00B4DB", 'width': 4},
-                'thickness': 0.75,
-                'value': 5000}}))
+            'bar': {'color': "#D90429"}, 'bgcolor': "black",
+            'borderwidth': 2, 'bordercolor': "#333",
+            'steps': [{'range': [0, 1500], 'color': '#333'}, {'range': [1500, 3500], 'color': '#444'}],
+            'threshold': {'line': {'color': "#00B4DB", 'width': 4}, 'thickness': 0.75, 'value': META_MENSAL}}))
     
-    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"}, height=300, margin=dict(l=10, r=10, t=50, b=10))
+    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"}, height=250, margin=dict(l=20, r=20, t=40, b=20))
     st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v8.0 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 10px;'>v9.0 Maxton Graphics</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
