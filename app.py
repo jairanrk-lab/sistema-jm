@@ -42,74 +42,113 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V11.5 - VISUAL PREMIUM + CARDS VOLTARAM) ---
+# --- 3. ESTILO CSS (V12 - DESIGN SYSTEM PREMIUM) ---
 # ==============================================================================
 st.markdown("""
 <style>
-    /* 1. FONTE POPPINS (Moderna e Arredondada) */
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    /* --- IMPORTAÇÃO DE FONTES E ÍCONES --- */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Montserrat:wght@400;500;700&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
-    
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
+
+    /* --- RESET GERAL --- */
     * { font-family: 'Poppins', sans-serif !important; }
-    
+    h1, h2, h3, h4, h5, h6 { font-family: 'Poppins', sans-serif !important; letter-spacing: -0.5px; }
+    p, span, div, input, button { font-family: 'Montserrat', sans-serif; } /* Dados em Montserrat para leitura técnica */
+
     /* --- FUNDO PRETO --- */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
 
-    /* --- SUMIR COM A BARRA LATERAL (Foco total no topo) --- */
-    [data-testid="stSidebarCollapsedControl"] { display: none !important; }
-    [data-testid="stSidebar"] { display: none !important; }
+    /* --- SUMIR COM A BARRA LATERAL (SNIPER MODE) --- */
+    [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
 
-    /* --- NAVEGAÇÃO SUPERIOR (BOTÕES DE APP) --- */
+    /* --- NAVEGAÇÃO SUPERIOR (O TRUQUE DOS ÍCONES BOOTSTRAP) --- */
     div[role="radiogroup"] {
         display: flex;
         flex-direction: row;
         justify-content: center;
-        background-color: #111;
-        border-radius: 16px;
+        background-color: #0a0a0a;
+        border-radius: 18px;
         padding: 6px;
-        border: 1px solid #333;
+        border: 1px solid #222;
         overflow-x: auto;
         gap: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     }
     
     div[role="radiogroup"] label {
-        background-color: #1a1a1a !important;
+        background-color: #121212 !important;
         border: 1px solid #333 !important;
-        padding: 12px 24px !important;
+        padding: 10px 20px !important;
         border-radius: 12px !important;
         transition: all 0.3s ease !important;
         margin: 0 !important;
-        color: #aaa !important;
+        color: #888 !important;
         font-weight: 600 !important;
-        font-size: 15px !important;
-        white-space: nowrap !important;
+        font-size: 14px !important; /* Texto um pouco menor para caber ícone */
         display: flex;
         align-items: center;
         justify-content: center;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
-    
-    /* Efeito Hover (Passar o mouse) */
+
+    /* INJEÇÃO DE ÍCONES VIA CSS (Mágica!) */
+    /* 1. Dashboard */
+    div[role="radiogroup"] label:nth-of-type(1) p::before {
+        content: "\\F598"; /* Código do ícone Speedometer */
+        font-family: "bootstrap-icons" !important;
+        margin-right: 8px;
+        font-size: 16px;
+        vertical-align: middle;
+    }
+    /* 2. Agenda */
+    div[role="radiogroup"] label:nth-of-type(2) p::before {
+        content: "\\F200"; /* Calendar */
+        font-family: "bootstrap-icons" !important;
+        margin-right: 8px; font-size: 16px; vertical-align: middle;
+    }
+    /* 3. Financeiro */
+    div[role="radiogroup"] label:nth-of-type(3) p::before {
+        content: "\\F23D"; /* Cash Coin */
+        font-family: "bootstrap-icons" !important;
+        margin-right: 8px; font-size: 16px; vertical-align: middle;
+    }
+    /* 4. Despesas */
+    div[role="radiogroup"] label:nth-of-type(4) p::before {
+        content: "\\F4E0"; /* Receipt */
+        font-family: "bootstrap-icons" !important;
+        margin-right: 8px; font-size: 16px; vertical-align: middle;
+    }
+    /* 5. Histórico */
+    div[role="radiogroup"] label:nth-of-type(5) p::before {
+        content: "\\F291"; /* Clock History */
+        font-family: "bootstrap-icons" !important;
+        margin-right: 8px; font-size: 16px; vertical-align: middle;
+    }
+
+    /* Efeito Hover */
     div[role="radiogroup"] label:hover {
         border-color: #D90429 !important;
         color: white !important;
+        transform: translateY(-2px);
     }
 
     /* O Botão Selecionado (ATIVO) */
     div[role="radiogroup"] label[data-checked="true"] {
-        background: linear-gradient(135deg, #D90429 0%, #8D021F 100%) !important;
+        background: linear-gradient(145deg, #D90429, #990000) !important;
         color: white !important;
         border-color: #D90429 !important;
-        box-shadow: 0 0 15px rgba(217, 4, 41, 0.6) !important;
-        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(217, 4, 41, 0.5) !important;
     }
     
-    /* Esconde as bolinhas do radio button */
+    /* Remove bolinhas do radio */
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p { margin: 0; }
 
-    /* --- CARDS DASHBOARD (Redondinhos e Bonitos) --- */
+    /* --- CARDS DO DASHBOARD (Estilo Neon) --- */
     .dash-card { 
+        background: #111;
         border-radius: 20px; 
         padding: 20px; 
         color: white; 
@@ -121,43 +160,35 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
-    .card-icon-bg { position: absolute !important; top: -15px !important; right: -15px !important; font-size: 110px !important; opacity: 0.1 !important; transform: rotate(20deg) !important; pointer-events: none !important; color: white !important; }
     
-    /* --- CARDS DE HISTÓRICO E AGENDA (A volta dos ícones) --- */
-    .agenda-card { 
-        background-color: #121212 !important; 
-        border-radius: 16px; 
-        padding: 20px; 
-        margin-bottom: 15px; 
+    /* --- CARDS DE HISTÓRICO/AGENDA (O Retorno do Visual Antigo) --- */
+    .service-card {
+        background-color: #111;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
         border: 1px solid #333;
-        border-left: 6px solid #00B4DB; 
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+        position: relative;
+        transition: all 0.2s;
+    }
+    .service-card:hover {
+        border-color: #555;
+        transform: scale(1.01);
     }
     
-    .history-card { 
-        background: linear-gradient(145deg, #161616, #0f0f0f) !important; 
-        border-radius: 16px; 
-        padding: 20px; 
-        margin-bottom: 15px; 
-        border: 1px solid #222;
-        transition: transform 0.2s;
-    }
-    .history-card:hover { transform: translateY(-2px); border-color: #444; }
+    /* Rodapé */
+    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #444; text-align: center; padding: 10px; font-size: 11px; border-top: 1px solid #111; z-index: 9999; }
     
-    /* CORES */
-    .bg-orange { background: linear-gradient(135deg, #FF9800, #F57C00); }
-    .bg-blue { background: linear-gradient(135deg, #00B4DB, #0083B0); }
-    .bg-red { background: linear-gradient(135deg, #D90429, #8D021F); }
-    .bg-green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+    /* Botões Padrão */
+    div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 8px !important; font-weight: 700 !important; border: none !important; height: 48px !important; font-size: 16px !important; width: 100%; }
     
-    /* RODAPÉ */
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #666; text-align: center; padding: 12px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
-    
-    /* Botões Normais */
-    div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 10px !important; font-weight: 600 !important; border: none !important; height: 45px !important; font-size: 16px !important; }
-    div.stButton > button:active { transform: scale(0.98); }
+    /* Cores de Fundo Especiais */
+    .bg-gradient-orange { background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); }
+    .bg-gradient-blue { background: linear-gradient(135deg, #00B4DB 0%, #0083B0 100%); }
+    .bg-gradient-red { background: linear-gradient(135deg, #D90429 0%, #8D021F 100%); }
+    .bg-gradient-green { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
 
 </style>
 """, unsafe_allow_html=True)
@@ -221,22 +252,14 @@ def carregar_catalogo():
         "Vitrificação": [800.0, 900.0, 1100.0, 1300.0, 1300.0, 500.0]
     })
 
-# Essa função retorna o HTML do ícone para usar nos CARDS
+# --- FUNÇÃO VISUAL PARA OS ÍCONES DOS CARDS ---
 def obter_icone_html(cat):
     if not isinstance(cat, str): return '<i class="bi bi-car-front-fill"></i>'
     c = cat.lower()
-    if "moto" in c: return '<i class="bi bi-motorcycle"></i>'
-    elif "suv" in c or "picape" in c or "caminhonete" in c: return '<i class="bi bi-truck-front-fill"></i>'
-    elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
-    else: return '<i class="bi bi-car-front-fill"></i>'
-
-# Essa função retorna EMOJI para usar em textos simples
-def obter_emoji_veiculo(cat):
-    if not isinstance(cat, str): return '🚘'
-    c = cat.lower()
-    if "moto" in c: return '🏍️'
-    elif "suv" in c or "picape" in c: return '🚙'
-    else: return '🚘'
+    if "moto" in c: return '<i class="bi bi-motorcycle" style="font-size:24px;"></i>'
+    elif "suv" in c or "picape" in c or "caminhonete" in c: return '<i class="bi bi-truck-front-fill" style="font-size:24px;"></i>'
+    elif "van" in c: return '<i class="bi bi-bus-front-fill" style="font-size:24px;"></i>'
+    else: return '<i class="bi bi-car-front-fill" style="font-size:24px;"></i>'
 
 def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
     pdf = FPDF()
@@ -260,29 +283,29 @@ def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
-# --- CABEÇALHO E NAVEGAÇÃO SUPERIOR (PREMIUM) ---
+# --- CABEÇALHO ---
 # ==============================================================================
 
 c_logo1, c_logo2, c_logo3 = st.columns([1,2,1])
 with c_logo2:
     if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
-    else: st.markdown("<h1 style='text-align:center; color:#D90429; font-weight:800'>JM DETAIL</h1>", unsafe_allow_html=True)
+    else: st.markdown("<h1 style='text-align:center; color:#D90429; font-weight:800; font-size:40px; margin-bottom:0'>JM DETAIL</h1>", unsafe_allow_html=True)
 
 st.write("") 
 
-# MENU DE NAVEGAÇÃO (Ícones + Texto bonito)
-menu_opcoes = ["📊 DASHBOARD", "📅 AGENDA", "💰 FINANCEIRO", "🧾 DESPESAS", "📜 HISTÓRICO"]
+# MENU DE NAVEGAÇÃO (TEXTO PURO - O CSS INJETA OS ÍCONES)
+menu_opcoes = ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
 menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 
 st.write("---") 
 
-# --- PÁGINAS (CONTEÚDO) ---
+# --- PÁGINAS ---
 def page_dashboard():
     hoje = datetime.now()
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     
-    st.markdown(f'## 🚀 Visão Geral <small style="font-size:14px; color:#888">| {nome_meses[mes_atual]}/{ano_atual}</small>', unsafe_allow_html=True)
+    st.markdown(f'## <i class="bi bi-rocket-takeoff-fill" style="color:#D90429"></i> Painel Geral <small style="color:#666">| {nome_meses[mes_atual]}</small>', unsafe_allow_html=True)
     
     df_v = carregar_dados("Vendas")
     df_d = carregar_dados("Despesas")
@@ -306,21 +329,21 @@ def page_dashboard():
     lucro_final = receita_mes - despesa_mes
     
     c1, c2 = st.columns(2)
-    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><small>PENDENTES</small><div style="font-size:22px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} veículos</small></div>', unsafe_allow_html=True)
-    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><small>FATURAMENTO</small><div style="font-size:22px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Mês Atual</small></div>', unsafe_allow_html=True)
+    with c1: st.markdown(f'<div class="dash-card bg-gradient-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><small style="opacity:0.8">PENDENTES</small><div style="font-size:24px;font-weight:800">{formatar_moeda(pendente_total)}</div><small>{count_p} veículos na fila</small></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="dash-card bg-gradient-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><small style="opacity:0.8">FATURAMENTO</small><div style="font-size:24px;font-weight:800">{formatar_moeda(receita_mes)}</div><small>Mês Atual</small></div>', unsafe_allow_html=True)
     
     c3, c4 = st.columns(2)
-    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><small>DESPESAS</small><div style="font-size:22px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos</small></div>', unsafe_allow_html=True)
-    cor_lucro = "bg-green" if lucro_final >= 0 else "bg-red"
-    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><small>LUCRO REAL</small><div style="font-size:22px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>Líquido</small></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="dash-card bg-gradient-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><small style="opacity:0.8">DESPESAS</small><div style="font-size:24px;font-weight:800">{formatar_moeda(despesa_mes)}</div><small>Saídas</small></div>', unsafe_allow_html=True)
+    cor_lucro = "bg-gradient-green" if lucro_final >= 0 else "bg-gradient-red"
+    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><small style="opacity:0.8">LUCRO REAL</small><div style="font-size:24px;font-weight:800">{formatar_moeda(lucro_final)}</div><small>Líquido</small></div>', unsafe_allow_html=True)
 
-    st.markdown("### 🎯 Meta Mensal")
+    st.markdown("### <i class='bi bi-bullseye'></i> Meta Mensal", unsafe_allow_html=True)
     fig = go.Figure(go.Indicator(mode = "gauge+number", value = receita_mes, domain = {'x': [0, 1], 'y': [0, 1]}, gauge = {'axis': {'range': [None, 6000], 'tickcolor': "white"}, 'bar': {'color': "#D90429"}, 'bgcolor': "black", 'borderwidth': 2, 'bordercolor': "#333", 'steps': [{'range': [0, 1500], 'color': '#222'}, {'range': [1500, 3500], 'color': '#333'}], 'threshold': {'line': {'color': "#00B4DB", 'width': 4}, 'thickness': 0.75, 'value': 5000}}))
-    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Poppins"}, height=200, margin=dict(l=20, r=20, t=20, b=20))
+    fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Poppins"}, height=220, margin=dict(l=20, r=20, t=30, b=20))
     st.plotly_chart(fig, use_container_width=True)
 
 def page_financeiro():
-    st.markdown('## 💰 Gestão Financeira')
+    st.markdown('## <i class="bi bi-cash-stack" style="color:#28a745"></i> Financeiro', unsafe_allow_html=True)
     df_v = carregar_dados("Vendas")
     comissao_pendente = 0.0; fundo_caixa = 0.0
     if not df_v.empty:
@@ -330,22 +353,27 @@ def page_financeiro():
         comissao_pendente = df_v[df_v["Status Comissao"] != "Pago"]["Valor Comissao"].sum()
         fundo_caixa = df_v["Fundo Caixa"].sum()
     
-    st.info(f"Caixa da Empresa (Acumulado): {formatar_moeda(fundo_caixa)}")
+    st.info(f"💰 Caixa da Empresa (10% acumulado): **{formatar_moeda(fundo_caixa)}**")
     
     col1, col2 = st.columns([2,1])
-    with col1: st.metric("Comissões Pendentes", formatar_moeda(comissao_pendente))
+    with col1: 
+        st.markdown(f"""<div class="dash-card bg-gradient-orange"><i class="bi bi-people-fill card-icon-bg"></i><small>COMISSÕES A PAGAR</small><div style="font-size:28px;font-weight:800">{formatar_moeda(comissao_pendente)}</div></div>""", unsafe_allow_html=True)
     with col2:
+        st.write("")
+        st.write("")
         if comissao_pendente > 0:
-            if st.button("Pagar Comissões"):
+            if st.button("REALIZAR PAGAMENTO", use_container_width=True):
                 sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
                 header = ws.row_values(1); col_idx = header.index("Status Comissao") + 1
                 for i, linha in enumerate(dados):
                     v = pd.to_numeric(str(linha.get("Valor Comissao", "0")).replace('R$', '').replace(',', '.'), errors='coerce')
                     if v > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
-                st.success("Pago!"); t_sleep.sleep(1); st.rerun()
+                st.success("Pagamento registrado!"); t_sleep.sleep(1); st.rerun()
+        else:
+            st.success("Tudo pago! ✅")
 
 def page_agendamento():
-    st.markdown('## 📅 Agenda Integrada')
+    st.markdown('## <i class="bi bi-calendar-check-fill" style="color:#00B4DB"></i> Agenda', unsafe_allow_html=True)
     tab_new, tab_list = st.tabs(["NOVO AGENDAMENTO", "LISTA DE SERVIÇOS"]) 
     df_cat = carregar_catalogo()
     
@@ -364,15 +392,14 @@ def page_agendamento():
             
             st.divider()
             ce1, ce2, ce3 = st.columns(3)
-            extra_v = ce1.number_input("Valor Extra (R$)", min_value=0.0)
+            extra_v = ce1.number_input("Extra (R$)", min_value=0.0)
             desconto_v = ce2.number_input("Desconto (R$)", min_value=0.0)
             quem = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
-            # Cálculo em Tempo Real
             if escolhidos:
                 precos = {s: df_cat[df_cat["Categoria"] == cat][s].values[0] for s in escolhidos}
                 total = sum(precos.values()) + extra_v - desconto_v
-                st.markdown(f"<h3 style='text-align:right; color:#39FF14'>Total: {formatar_moeda(total)}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align:right; font-size:24px; font-weight:bold; color:#39FF14; margin-bottom:10px'>TOTAL: {formatar_moeda(total)}</div>", unsafe_allow_html=True)
                 
                 if st.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
                     serv_str = ", ".join(escolhidos)
@@ -387,32 +414,32 @@ def page_agendamento():
         if df_a.empty: st.info("Agenda vazia.")
         else:
             for i, r in df_a.iterrows():
-                # Card de Agendamento (Estilo Próximo ao Histórico)
+                # Card de Agendamento Colorido (Estilo Antigo)
                 st.markdown(f"""
-                <div class="agenda-card">
+                <div class="service-card" style="border-left: 5px solid #00B4DB;">
                     <div style="display:flex; justify-content:space-between; align-items:center">
-                        <div style="font-weight:bold; color:#00B4DB; font-size:16px">
-                            <i class="bi bi-clock"></i> {r['Data']} às {r['Hora']}
+                        <div style="font-weight:bold; color:#00B4DB; font-size:14px">
+                            <i class="bi bi-calendar-event"></i> {r['Data']} às {r['Hora']}
                         </div>
                         <div style="font-weight:800; font-size:18px; color:#39FF14">
                             {formatar_moeda(float(r['Total']))}
                         </div>
                     </div>
-                    <div style="margin-top:10px; font-size:18px; font-weight:700; color:white">
-                        {obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']} <span style="font-size:14px; color:#888">({r['Placa']})</span>
+                    <div style="margin-top:8px; font-size:18px; font-weight:700; color:white">
+                        {obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']}
                     </div>
-                    <div style="margin-top:5px; font-size:14px; color:#ccc">
-                        <i class="bi bi-person-fill"></i> {r['Cliente']}
+                    <div style="font-size:13px; color:#ccc; margin-bottom:8px">
+                        <i class="bi bi-person-fill"></i> {r['Cliente']} <span style="color:#666">| {r['Placa']}</span>
                     </div>
-                    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #333; font-size:13px; color:#888">
-                        🔧 {r['Servicos']}
+                    <div style="padding-top:8px; border-top:1px solid #333; font-size:12px; color:#888">
+                        {r['Servicos']}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                c_btn1, c_btn2 = st.columns(2)
-                with c_btn1:
-                    if st.button(f"✅ Concluir Serviço", key=f"ok_{i}", use_container_width=True):
+                col_btn_1, col_btn_2 = st.columns(2)
+                with col_btn_1:
+                    if st.button(f"✅ Concluir", key=f"ok_{i}", use_container_width=True):
                         fundo = float(r["Total"]) * 0.10
                         comis = float(r["Total"]) * 0.40 if "Equipe" in r["Executor"] else 0.0
                         lucro = float(r["Total"]) - fundo - comis
@@ -420,15 +447,13 @@ def page_agendamento():
                         salvar_no_google("Vendas", venda)
                         excluir_agendamento(i)
                         st.rerun()
-                with c_btn2:
-                    if st.button(f"🗑️ Cancelar", key=f"del_{i}", use_container_width=True):
+                with col_btn_2:
+                    if st.button(f"🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i)
-                        st.warning("Agendamento excluído.")
-                        t_sleep.sleep(1)
                         st.rerun()
 
 def page_despesas():
-    st.markdown('## 🧾 Despesas')
+    st.markdown('## <i class="bi bi-receipt" style="color:#D90429"></i> Despesas', unsafe_allow_html=True)
     with st.form("form_desp"):
         desc = st.text_input("Descrição")
         val = st.number_input("Valor", min_value=0.0)
@@ -437,50 +462,45 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## 📜 Garagem & Histórico')
+    st.markdown('## <i class="bi bi-clock-history" style="color:#FFC107"></i> Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
     
     if df.empty:
         st.info("Nenhum serviço registrado ainda.")
         return
 
-    # Campo de Busca
-    busca = st.text_input("🔍 Buscar Cliente ou Carro...", placeholder="Ex: Fiat Toro ou João").strip().lower()
-    
-    # Inverte a ordem para mostrar os mais recentes primeiro
+    busca = st.text_input("🔍 Buscar Cliente ou Carro...", placeholder="Digite para filtrar...").strip().lower()
     df_f = df.iloc[::-1]
     
     if busca:
         df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
 
-    # Loop para criar os CARDS (Visual Rico que você queria)
+    # Loop dos Cards COLORIDOS e COMPLETOS (Igual ao antigo)
     for index, r in df_f.iterrows():
-        # Define a cor da borda baseado no status (se tiver)
-        cor_borda = "#28a745" # Verde padrão
-        status_texto = r.get("Status", "Concluído")
+        cor_status = "#28a745" # Verde
         
         # HTML do Card
         html_card = f"""
-        <div class="history-card" style="border-left: 5px solid {cor_borda}">
+        <div class="service-card" style="border-left: 5px solid {cor_status}; background-color: #121212;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <h3 style="margin: 0; font-size: 20px; color: white; font-weight: 700;">
+                    <h3 style="margin: 0; font-size: 18px; color: white; font-weight: 700;">
                         {obter_icone_html(r.get("Categoria", ""))} {r["Carro"]}
                     </h3>
-                    <p style="margin: 5px 0 0 0; color: #bbb; font-size: 14px;">
+                    <p style="margin: 4px 0 0 0; color: #bbb; font-size: 13px;">
                         <i class="bi bi-person"></i> {r["Cliente"]} &nbsp;|&nbsp; {r["Placa"]}
                     </p>
                 </div>
                 <div style="text-align: right;">
-                    <h2 style="margin: 0; color: #39FF14; font-weight: 700; font-size: 22px;">
+                    <h2 style="margin: 0; color: #39FF14; font-weight: 700; font-size: 20px;">
                         {formatar_moeda(float(r["Total"]))}
                     </h2>
-                    <span style="background-color: #222; padding: 4px 8px; border-radius: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #aaa;">
+                    <span style="background-color: #222; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; border: 1px solid #333;">
                         {r["Data"]}
                     </span>
                 </div>
             </div>
-            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #333; color: #888; font-size: 13px;">
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #222; color: #888; font-size: 12px; font-style: italic;">
                 <i class="bi bi-tools"></i> {r["Serviços"]}
             </div>
         </div>
