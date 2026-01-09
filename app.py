@@ -1,3 +1,11 @@
+Perfeito, Jairan! Recebi seu código.
+Fiz a alteração cirúrgica no CSS.
+O que eu mudei:
+ * Removi a regra antiga que "matava" o cabeçalho (display: none).
+ * Adicionei a regra da "Tinta Invisível": O texto keyboard_double_arrow_right vai ficar transparente.
+ * Adicionei um "X" vermelho (#D90429) para aparecer no lugar do texto feio. Assim você vê onde clicar para fechar o menu, mantendo o visual profissional.
+📋 O Código Completo (V10.11)
+Pode copiar TUDO abaixo, apagar o que tem no seu arquivo app.py no GitHub e colar este novo.
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -42,7 +50,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.10 - ALINHAMENTO PERFEITO + FIM DO CABEÇALHO) ---
+# --- 3. ESTILO CSS (V10.11 - CORREÇÃO VISUAL MOBILE) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,11 +64,19 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. SOLUÇÃO NUCLEAR PRO TEXTO FANTASMA: REMOVER O CABEÇALHO DA SIDEBAR --- */
-    [data-testid="stSidebarHeader"] {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
+    /* --- 2. SOLUÇÃO FANTASMA (REMOCÃO DO TEXTO FEIO NO MOBILE) --- */
+    /* Deixa o texto 'keyboard_double_arrow...' transparente, mas o botão continua lá */
+    [data-testid="stSidebarHeader"] button {
+        color: transparent !important;
+    }
+    
+    /* Adiciona um 'X' vermelho bonito no lugar do texto feio */
+    [data-testid="stSidebarHeader"] button::after {
+        content: "✖"; 
+        color: #D90429 !important;
+        font-size: 25px !important;
+        font-weight: bold !important;
+        margin-left: -50px; /* Puxa o X para centralizar onde estava o texto */
     }
     
     /* --- SIDEBAR RESPONSIVA --- */
@@ -448,3 +464,4 @@ elif menu == "HISTÓRICO": page_historico()
 
 # --- RODAPÉ FIXO ---
 st.markdown('<div class="footer">Desenvolvido por <b>Jairan Jesus Matos</b> | JM Detail System © 2026</div>', unsafe_allow_html=True)
+
