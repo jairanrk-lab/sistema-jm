@@ -42,11 +42,11 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.12 - CORREÇÃO TOTAL DOS ÍCONES) ---
+# --- 3. ESTILO CSS (V10.14 - A SOLUÇÃO HÍBRIDA E SEGURA) ---
 # ==============================================================================
 st.markdown("""
 <style>
-    /* 1. FONTE PREMIUM EM TUDO */
+    /* 1. FONTES */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
@@ -56,43 +56,50 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. CORREÇÃO DOS ÍCONES QUEBRADOS (SOLUÇÃO FINAL) --- */
+    /* --- 2. VACINA ANTI-TEXTO FEIO (SEM QUEBRAR O MOBILE) --- */
     
-    /* Regra Geral: Mata o texto original (keyboard_arrow...) fazendo ele ter tamanho ZERO */
+    /* Seleciona os botões de controle da sidebar (Abrir e Fechar) */
     [data-testid="stSidebarCollapsedControl"] button,
     [data-testid="stSidebarHeader"] button {
-        font-size: 0 !important; 
-        color: transparent !important;
         border: none !important;
         background: transparent !important;
         width: 50px !important;
         height: 50px !important;
+        color: transparent !important; /* Torna o texto invisível */
+        font-size: 0px !important;     /* Reduz o texto a zero para ele não ocupar espaço */
     }
 
-    /* Ícone de ABRIR MENU (☰) - Substitui o texto feio */
+    /* Força esconder qualquer span ou div dentro do botão que contenha o texto */
+    [data-testid="stSidebarCollapsedControl"] button > div,
+    [data-testid="stSidebarCollapsedControl"] button > span,
+    [data-testid="stSidebarHeader"] button > div,
+    [data-testid="stSidebarHeader"] button > span {
+        display: none !important;
+    }
+
+    /* RECRIA O ÍCONE DE ABRIR (Hambúrguer ☰) */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
         font-size: 35px !important; 
         color: #D90429 !important; /* Vermelho JM */
-        font-weight: bold !important;
+        font-weight: 800 !important;
         display: block !important;
-        line-height: 50px !important;
+        margin-top: -25px !important; /* Centraliza */
+        margin-left: 5px !important;
     }
 
-    /* Ícone de FECHAR MENU (✖) - Substitui o texto feio */
+    /* RECRIA O ÍCONE DE FECHAR (X) */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
         font-size: 28px !important;
         color: #666 !important; 
         font-weight: bold !important;
         display: block !important;
-        line-height: 50px !important;
+        margin-top: -25px !important;
     }
     
-    /* Efeito Hover (Fica vermelho ao passar o mouse) */
-    [data-testid="stSidebarHeader"] button:hover::after {
-        color: #D90429 !important;
-    }
+    /* Hover */
+    [data-testid="stSidebarHeader"] button:hover::after { color: #D90429 !important; }
     
     /* --- SIDEBAR RESPONSIVA --- */
     @media (min-width: 992px) { 
