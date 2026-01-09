@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import plotly.graph_objects as go # <--- BIBLIOTECA PARA O VELOCÍMETRO
 from datetime import datetime, date, time, timedelta
 from fpdf import FPDF
 import gspread
@@ -51,7 +52,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.8 - CALENDÁRIO IMPECÁVEL" 🌑 ---
+# --- 3. ESTILO CSS "V6.9 - VELOCÍMETRO & CALENDÁRIO" 🌑 ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -101,49 +102,14 @@ st.markdown("""
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
 
     /* ========================================================================= */
-    /* --- CORREÇÃO TOTAL DO CALENDÁRIO (FIX DA MANCHA PRETA) --- */
+    /* --- CORREÇÃO TOTAL DO CALENDÁRIO --- */
     /* ========================================================================= */
-    
-    /* 1. Container e Popover */
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] > div,
-    div[data-baseweb="calendar"] {
-        background-color: #ffffff !important;
-    }
-
-    /* 2. REGRA MASTER: Força TODOS os elementos internos a serem brancos */
-    /* Isso elimina os blocos pretos dos dias vazios */
-    div[data-baseweb="calendar"] div {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-
-    /* 3. Cabeçalho do Mês (Month Year) */
-    div[data-baseweb="calendar"] div[aria-label^="Month"] {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-
-    /* 4. Botão do Dia Selecionado (Vermelho) - PRECISA DE ALTA PRIORIDADE */
-    /* Temos que sobrescrever a regra 2 aqui */
-    div[data-baseweb="calendar"] button[aria-selected="true"],
-    div[data-baseweb="calendar"] button[aria-selected="true"] div {
-        background-color: #D90429 !important;
-        color: #ffffff !important;
-    }
-
-    /* 5. Setas de Navegação */
-    div[data-baseweb="calendar"] button svg {
-        fill: #000000 !important;
-        color: #000000 !important;
-    }
-
-    /* 6. Hover nos dias */
-    div[data-baseweb="calendar"] button:hover {
-        background-color: #f0f0f0 !important;
-        cursor: pointer !important;
-    }
-    /* ========================================================================= */
+    div[data-baseweb="popover"], div[data-baseweb="popover"] > div, div[data-baseweb="calendar"] { background-color: #ffffff !important; }
+    div[data-baseweb="calendar"] div { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-baseweb="calendar"] div[aria-label^="Month"] { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-baseweb="calendar"] button[aria-selected="true"], div[data-baseweb="calendar"] button[aria-selected="true"] div { background-color: #D90429 !important; color: #ffffff !important; }
+    div[data-baseweb="calendar"] button svg { fill: #000000 !important; color: #000000 !important; }
+    div[data-baseweb="calendar"] button:hover { background-color: #f0f0f0 !important; cursor: pointer !important; }
 
     /* Dropdowns (Selectbox) */
     ul[role="listbox"] { background-color: #ffffff !important; }
@@ -476,16 +442,39 @@ with st.sidebar:
     elif os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
     menu = st.radio("NAVEGAÇÃO", ["DASHBOARD", "AGENDAMENTO", "FINANCEIRO", "DESPESAS", "HISTÓRICO"], label_visibility="collapsed")
     st.write("---")
+    
+    # --- GRÁFICO VELOCÍMETRO (GAUGE) DA META ---
     df_meta = carregar_dados("Vendas")
     if not df_meta.empty:
         for c in ["Total"]:
             df_meta[c] = pd.to_numeric(df_meta[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
         total_vendido = df_meta[df_meta["Status"]=="Concluído"]["Total"].sum()
         META_MENSAL = 5000.00
-        progresso = min(total_vendido / META_MENSAL, 1.0)
-        st.markdown(f"""<div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;"><p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês</p><p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">{formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span></p></div>""", unsafe_allow_html=True)
-        st.progress(progresso)
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.8 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+        
+        # Criação do Gráfico Plotly
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = total_vendido,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "META MENSAL", 'font': {'size': 20, 'color': "white"}},
+            gauge = {
+                'axis': {'range': [None, 6000], 'tickwidth': 1, 'tickcolor': "white"},
+                'bar': {'color': "#D90429"},
+                'bgcolor': "black",
+                'borderwidth': 2,
+                'bordercolor': "#333",
+                'steps': [
+                    {'range': [0, 1500], 'color': '#333'},
+                    {'range': [1500, 3500], 'color': '#444'}],
+                'threshold': {
+                    'line': {'color': "#00B4DB", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 5000}}))
+        
+        fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"})
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.9 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
