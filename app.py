@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.15 - MANTO DA INVISIBILIDADE) ---
+# --- 3. ESTILO CSS (V10.16 - CORREÇÃO AGRESSIVA DO BOTÃO DE ABRIR) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,49 +56,56 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. VACINA FINAL (VISIBILITY HIDDEN) --- */
-    /* Essa técnica obriga o texto original a sumir, mas mantém o clique */
-
-    /* Alvo: Botões de Controle (Onde aparece o texto feio) */
-    [data-testid="stSidebarCollapsedControl"] button,
-    [data-testid="stSidebarHeader"] button {
-        visibility: hidden !important; /* O SEGREDO: Torna o elemento original invisível */
-        width: 60px !important;
-        height: 60px !important;
+    /* --- 2. VACINA NUCLEAR PRO TEXTO TEIMOSO --- */
+    
+    /* PARTE 1: O BOTÃO DE ABRIR (Main Screen) - Onde aparece 'keyboard...' */
+    [data-testid="stSidebarCollapsedControl"] {
+        color: transparent !important;
+        font-size: 0px !important; /* Mata o texto no container */
+    }
+    
+    [data-testid="stSidebarCollapsedControl"] button {
+        color: transparent !important;
+        font-size: 0px !important; /* Mata o texto no botão */
+        background: transparent !important;
+        border: none !important;
+        width: 50px !important;
+        height: 50px !important;
     }
 
-    /* RECRIA O ÍCONE DE ABRIR (☰) VISÍVEL */
+    /* Garante que qualquer SPAN ou DIV filho (o texto) desapareça */
+    [data-testid="stSidebarCollapsedControl"] button > * {
+        display: none !important;
+    }
+
+    /* Cria o ÍCONE DE MENU (☰) no lugar */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
-        visibility: visible !important; /* Traz de volta SÓ o nosso ícone */
-        font-size: 40px !important; 
+        font-size: 35px !important; /* Restaura o tamanho só pro nosso ícone */
         color: #D90429 !important; /* Vermelho JM */
         font-weight: 800 !important;
         display: block !important;
-        margin-top: -5px !important;
-        margin-left: 0px !important;
+        position: absolute !important;
+        top: 5px !important;
+        left: 5px !important;
     }
 
-    /* RECRIA O ÍCONE DE FECHAR (✖) VISÍVEL */
+    /* PARTE 2: O BOTÃO DE FECHAR (Dentro do Menu) - Onde aparece o X */
+    [data-testid="stSidebarHeader"] button {
+        color: transparent !important;
+        font-size: 0px !important;
+    }
+    [data-testid="stSidebarHeader"] button > * { display: none !important; }
+    
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
-        visibility: visible !important; /* Traz de volta SÓ o X */
-        font-size: 30px !important;
+        font-size: 28px !important;
         color: #666 !important; 
         font-weight: bold !important;
         display: block !important;
-        margin-top: 0px !important;
     }
-    
-    /* Hover */
     [data-testid="stSidebarHeader"] button:hover::after { color: #D90429 !important; }
 
-    /* Garantia Extra: Esconde qualquer filho direto do botão */
-    [data-testid="stSidebarCollapsedControl"] button > *,
-    [data-testid="stSidebarHeader"] button > * {
-        display: none !important;
-    }
-    
     /* --- SIDEBAR RESPONSIVA --- */
     @media (min-width: 992px) { 
         [data-testid="stSidebar"] { min-width: 300px !important; max-width: 350px !important; } 
