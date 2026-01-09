@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.14 - A SOLUÇÃO HÍBRIDA E SEGURA) ---
+# --- 3. ESTILO CSS (V10.15 - MANTO DA INVISIBILIDADE) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,50 +56,48 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. VACINA ANTI-TEXTO FEIO (SEM QUEBRAR O MOBILE) --- */
-    
-    /* Seleciona os botões de controle da sidebar (Abrir e Fechar) */
+    /* --- 2. VACINA FINAL (VISIBILITY HIDDEN) --- */
+    /* Essa técnica obriga o texto original a sumir, mas mantém o clique */
+
+    /* Alvo: Botões de Controle (Onde aparece o texto feio) */
     [data-testid="stSidebarCollapsedControl"] button,
     [data-testid="stSidebarHeader"] button {
-        border: none !important;
-        background: transparent !important;
-        width: 50px !important;
-        height: 50px !important;
-        color: transparent !important; /* Torna o texto invisível */
-        font-size: 0px !important;     /* Reduz o texto a zero para ele não ocupar espaço */
+        visibility: hidden !important; /* O SEGREDO: Torna o elemento original invisível */
+        width: 60px !important;
+        height: 60px !important;
     }
 
-    /* Força esconder qualquer span ou div dentro do botão que contenha o texto */
-    [data-testid="stSidebarCollapsedControl"] button > div,
-    [data-testid="stSidebarCollapsedControl"] button > span,
-    [data-testid="stSidebarHeader"] button > div,
-    [data-testid="stSidebarHeader"] button > span {
-        display: none !important;
-    }
-
-    /* RECRIA O ÍCONE DE ABRIR (Hambúrguer ☰) */
+    /* RECRIA O ÍCONE DE ABRIR (☰) VISÍVEL */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
-        font-size: 35px !important; 
+        visibility: visible !important; /* Traz de volta SÓ o nosso ícone */
+        font-size: 40px !important; 
         color: #D90429 !important; /* Vermelho JM */
         font-weight: 800 !important;
         display: block !important;
-        margin-top: -25px !important; /* Centraliza */
-        margin-left: 5px !important;
+        margin-top: -5px !important;
+        margin-left: 0px !important;
     }
 
-    /* RECRIA O ÍCONE DE FECHAR (X) */
+    /* RECRIA O ÍCONE DE FECHAR (✖) VISÍVEL */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
-        font-size: 28px !important;
+        visibility: visible !important; /* Traz de volta SÓ o X */
+        font-size: 30px !important;
         color: #666 !important; 
         font-weight: bold !important;
         display: block !important;
-        margin-top: -25px !important;
+        margin-top: 0px !important;
     }
     
     /* Hover */
     [data-testid="stSidebarHeader"] button:hover::after { color: #D90429 !important; }
+
+    /* Garantia Extra: Esconde qualquer filho direto do botão */
+    [data-testid="stSidebarCollapsedControl"] button > *,
+    [data-testid="stSidebarHeader"] button > * {
+        display: none !important;
+    }
     
     /* --- SIDEBAR RESPONSIVA --- */
     @media (min-width: 992px) { 
