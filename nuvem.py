@@ -51,7 +51,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V7.0 - CORREÇÃO CALENDÁRIO & GAUGE" ---
+# --- 3. ESTILO CSS "V8.0 - RESGATE VISUAL TOTAL" ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -60,40 +60,124 @@ st.markdown("""
 
     html, body, [class*="css"] { font-family: 'Montserrat', sans-serif !important; }
 
-    /* --- FUNDO PRETO --- */
+    /* --- FUNDO PRETO GLOBAL --- */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important;
     }
+
+    /* ============================================================ */
+    /* --- CORREÇÃO DA SIDEBAR (LARGURA E BOTÕES) --- */
+    /* ============================================================ */
     
-    /* --- CALENDÁRIO (FORÇA BRUTA PARA REMOVER BARRINHA PRETA) --- */
-    div[data-baseweb="calendar"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-baseweb="calendar"] div { color: #000000 !important; }
-    div[data-baseweb="day"] { color: #000000 !important; }
-    div[data-baseweb="day"]:hover { background-color: #f0f0f0 !important; }
+    /* 1. Forçar largura mínima para a sidebar não "amassar" */
+    [data-testid="stSidebar"] {
+        min-width: 320px !important;
+        max-width: 320px !important;
+    }
+
+    /* 2. Esconder as "bolinhas" (Radio Buttons) */
+    [data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child {
+        display: none !important;
+    }
+
+    /* 3. Estilizar o texto como BOTÃO RETANGULAR */
+    [data-testid="stSidebar"] div[role="radiogroup"] label {
+        padding: 12px 20px !important;
+        background-color: #111111 !important;
+        border: 1px solid #333 !important;
+        color: #ddd !important;
+        border-radius: 8px !important;
+        margin-bottom: 8px !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.3s ease !important;
+    }
+
+    /* 4. Texto dentro do botão (sem quebra de linha) */
+    [data-testid="stSidebar"] div[role="radiogroup"] label p {
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+        white-space: nowrap !important; /* Impede quebra de linha */
+    }
+
+    /* 5. Hover e Selecionado */
+    [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+        border-color: #D90429 !important;
+        color: white !important;
+        cursor: pointer !important;
+    }
+    [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] {
+        background-color: #D90429 !important;
+        color: white !important;
+        border-color: #D90429 !important;
+    }
+
+    /* Logo Centralizada */
+    [data-testid="stSidebar"] img {
+        display: block !important;
+        margin: 0 auto 20px auto !important;
+        max-width: 90% !important;
+    }
+
+    /* ============================================================ */
+    /* --- CORREÇÃO DO DROPDOWN (TEXTO INVISÍVEL) --- */
+    /* ============================================================ */
+    /* Menu Suspenso (Lista de opções) */
+    div[role="listbox"] ul {
+        background-color: #ffffff !important;
+    }
+    /* Texto das opções (Preto para aparecer no fundo branco) */
+    div[role="listbox"] li {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+    /* Hover nas opções */
+    div[role="listbox"] li:hover {
+        background-color: #D90429 !important;
+        color: white !important;
+    }
+
+    /* ============================================================ */
+    /* --- CORREÇÃO DO CALENDÁRIO --- */
+    /* ============================================================ */
+    /* Container Geral do Calendário (Tentativa de cobrir o fundo preto) */
+    div[data-baseweb="calendar"] {
+        background-color: #ffffff !important;
+        padding: 10px !important;
+        border-radius: 8px !important;
+    }
+    div[data-baseweb="calendar"] * {
+        color: #000000 !important;
+    }
+    div[data-baseweb="day"]:hover {
+        background-color: #eee !important;
+    }
+    /* Dia selecionado */
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #D90429 !important;
+        color: white !important;
+    }
+
+    /* Inputs (Caixas de texto) */
+    input, textarea, select { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { 
+        background-color: #ffffff !important; 
+        border: 1px solid #333 !important; 
+    }
+
+    /* Textos Gerais Brancos */
+    h1, h2, h3, h4, h5, h6, p, span, div, label { color: white; }
     
-    /* Dia Selecionado e Hoje */
-    div[data-baseweb="calendar"] button[aria-selected="true"] { background-color: #D90429 !important; color: white !important; }
-    div[data-baseweb="calendar"] div[aria-label^="Month"] { color: #000000 !important; font-weight: bold !important; }
-    
-    /* Setas do Calendário */
-    div[data-baseweb="calendar"] svg { fill: #000000 !important; color: #000000 !important; }
+    /* Exceções para textos que precisam ser pretos (Calendário e Select) */
+    div[data-baseweb="calendar"] *, div[data-baseweb="select"] *, div[role="listbox"] * { color: #000000 !important; }
 
-    /* Inputs Gerais */
-    input, textarea, select { color: #000000 !important; -webkit-text-fill-color: #000000 !important; caret-color: #000000 !important; }
-    .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
-
-    /* Dropdowns */
-    ul[role="listbox"] { background-color: #ffffff !important; }
-    li[role="option"] { color: #000000 !important; background-color: #ffffff !important; }
-    li[role="option"]:hover { background-color: #D90429 !important; color: white !important; }
-
-    /* Títulos */
-    h1, h2, h3, h4, h5, h6, p, label, span, div { color: white !important; }
-    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; }
-    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; }
-
-    /* Botões */
-    div.stButton > button { background-color: #D90429 !important; color: white !important; border: none !important; border-radius: 6px !important; text-transform: uppercase !important; font-weight: 700 !important; }
+    /* Custom Titles e Botões */
+    .custom-title { display: flex; align-items: center; gap: 15px; font-weight: 700; font-size: 2.2rem; margin-bottom: 20px; color: white !important; }
+    .custom-subtitle { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.5rem; margin-bottom: 15px; margin-top: 10px; color: white !important; }
+    div.stButton > button { background-color: #D90429 !important; color: white !important; border: none !important; border-radius: 6px !important; text-transform: uppercase !important; font-weight: 700 !important; width: 100% !important; }
     div.stButton > button:hover { background-color: #EF233C !important; transform: scale(1.02); }
 
     /* Cards */
@@ -109,11 +193,6 @@ st.markdown("""
     .bg-green { background: linear-gradient(160deg, #11998e 0%, #38ef7d 100%); }
     .bg-purple { background: linear-gradient(160deg, #8E2DE2 0%, #4A00E0 100%); }
     .bg-dark { background: linear-gradient(160deg, #222 0%, #000000 100%); border: 1px solid #444; }
-
-    /* Sidebar */
-    [data-testid="stSidebar"] img { width: 100%; margin-bottom: 20px; }
-    [data-testid="stSidebar"] div[role="radiogroup"] label { padding: 14px 20px !important; background-color: #0a0a0a !important; border: 1px solid #222 !important; color: #aaa !important; border-radius: 8px !important; margin-bottom: 8px !important; }
-    [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background-color: #D90429 !important; color: white !important; }
 
 </style>
 """, unsafe_allow_html=True)
@@ -413,6 +492,8 @@ def page_historico():
 with st.sidebar:
     if os.path.exists("logo_sidebar.png"): st.image("logo_sidebar.png", use_container_width=True)
     elif os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
+    
+    # Menu com nomes curtos para garantir que caibam
     menu = st.radio("NAVEGAÇÃO", ["DASHBOARD", "AGENDAMENTO", "FINANCEIRO", "DESPESAS", "HISTÓRICO"], label_visibility="collapsed")
     st.write("---")
     
@@ -427,7 +508,7 @@ with st.sidebar:
     
     META_MENSAL = 5000.00
     
-    # Criação do Gráfico Plotly (SEMPRE EXIBIDO)
+    # Criação do Gráfico Plotly
     fig = go.Figure(go.Indicator(
         mode = "gauge+number",
         value = total_vendido,
@@ -450,7 +531,7 @@ with st.sidebar:
     fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Montserrat"}, height=300, margin=dict(l=10, r=10, t=50, b=10))
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v7.0 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v8.0 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
