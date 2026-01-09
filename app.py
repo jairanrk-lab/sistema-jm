@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.19 - TÉCNICA DO RECHEIO VAZIO) ---
+# --- 3. ESTILO CSS (V10.19 - A BALA DE PRATA / SNIPER) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,64 +56,58 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. TÉCNICA "ESVAZIAR O BOTÃO" --- */
+    /* --- 2. O TIRO DE SNIPER (Baseado na sua foto do Inspecionar) --- */
+    
+    /* ALVO: O elemento exato que segura o texto 'keyboard_double_arrow...' */
+    [data-testid="stSidebarCollapsedControl"] [data-testid="stIconMaterial"],
+    [data-testid="stSidebarHeader"] [data-testid="stIconMaterial"] {
+        display: none !important; /* REMOVE O TEXTO DO MAPA */
+        opacity: 0 !important;
+        visibility: hidden !important;
+        font-size: 0 !important;
+    }
 
-    /* PASSO 1: Pegar o botão e limpar formatação */
+    /* Limpa o botão pai para receber nosso ícone novo */
     [data-testid="stSidebarCollapsedControl"] button, 
     [data-testid="stSidebarHeader"] button {
         background: transparent !important;
         border: none !important;
-        color: transparent !important; /* Texto transparente por segurança */
+        color: transparent !important;
         width: 60px !important;
         height: 60px !important;
-        position: relative !important;
-        z-index: 100 !important;
     }
 
-    /* PASSO 2: O PULO DO GATO - Matar qualquer coisa DENTRO do botão */
-    /* Isso apaga o texto "keyboard_double_arrow..." e qualquer SVG quebrado */
-    [data-testid="stSidebarCollapsedControl"] button > *,
-    [data-testid="stSidebarHeader"] button > * {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-        font-size: 0 !important;
-    }
-
-    /* PASSO 3: Desenhar nosso ícone NOVO e LIMPO por cima */
-    
-    /* ÍCONE DE ABRIR (☰) */
+    /* RECRIA O ÍCONE DE ABRIR (☰) */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
         color: #D90429 !important; /* Vermelho JM */
-        font-size: 45px !important; 
+        font-size: 40px !important; 
         font-weight: 800 !important;
         position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -60%) !important; /* Centraliza perfeitamente */
+        top: 0px !important;
+        left: 0px !important;
+        width: 100% !important;
+        text-align: center !important;
         visibility: visible !important;
         display: block !important;
-        line-height: 1 !important;
     }
 
-    /* ÍCONE DE FECHAR (✖) */
+    /* RECRIA O ÍCONE DE FECHAR (✖) */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
-        color: #888 !important; /* Cinza */
+        color: #666 !important; /* Cinza */
         font-size: 30px !important;
         font-weight: bold !important;
         position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        top: 10px !important;
+        left: 0px !important;
+        width: 100% !important;
+        text-align: center !important;
         visibility: visible !important;
         display: block !important;
-        line-height: 1 !important;
     }
     
-    /* Hover Efeito */
+    /* Hover Vermelho no X */
     [data-testid="stSidebarHeader"] button:hover::after { color: #D90429 !important; }
 
     /* --- SIDEBAR RESPONSIVA --- */
