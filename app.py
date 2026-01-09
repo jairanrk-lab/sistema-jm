@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.11 - CORREÇÃO VISUAL MOBILE) ---
+# --- 3. ESTILO CSS (V10.12 - CORREÇÃO TOTAL DOS ÍCONES) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,19 +56,42 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. SOLUÇÃO FANTASMA (REMOCÃO DO TEXTO FEIO NO MOBILE) --- */
-    /* Deixa o texto 'keyboard_double_arrow...' transparente, mas o botão continua lá */
-    [data-testid="stSidebarHeader"] button {
-        color: transparent !important;
-    }
+    /* --- 2. CORREÇÃO DOS ÍCONES QUEBRADOS (SOLUÇÃO FINAL) --- */
     
-    /* Adiciona um 'X' vermelho bonito no lugar do texto feio */
+    /* Regra Geral: Mata o texto original (keyboard_arrow...) fazendo ele ter tamanho ZERO */
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="stSidebarHeader"] button {
+        font-size: 0 !important; 
+        color: transparent !important;
+        border: none !important;
+        background: transparent !important;
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    /* Ícone de ABRIR MENU (☰) - Substitui o texto feio */
+    [data-testid="stSidebarCollapsedControl"] button::after {
+        content: "☰"; 
+        font-size: 35px !important; 
+        color: #D90429 !important; /* Vermelho JM */
+        font-weight: bold !important;
+        display: block !important;
+        line-height: 50px !important;
+    }
+
+    /* Ícone de FECHAR MENU (✖) - Substitui o texto feio */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
-        color: #D90429 !important;
-        font-size: 25px !important;
+        font-size: 28px !important;
+        color: #666 !important; 
         font-weight: bold !important;
-        margin-left: -50px; /* Puxa o X para centralizar onde estava o texto */
+        display: block !important;
+        line-height: 50px !important;
+    }
+    
+    /* Efeito Hover (Fica vermelho ao passar o mouse) */
+    [data-testid="stSidebarHeader"] button:hover::after {
+        color: #D90429 !important;
     }
     
     /* --- SIDEBAR RESPONSIVA --- */
@@ -92,7 +115,7 @@ st.markdown("""
     [data-testid="stSidebar"] div[role="radiogroup"] label:hover { border-color: #D90429 !important; background-color: #1a1a1a !important; color: white !important; transform: scale(1.02); }
     [data-testid="stSidebar"] div[role="radiogroup"] [aria-checked="true"] { background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important; color: white !important; border-color: #D90429 !important; }
     
-    /* --- 3. CORREÇÃO DAS CAIXINHAS TORTAS (ALINHAMENTO) --- */
+    /* --- 3. CORREÇÃO DAS CAIXINHAS --- */
     .dash-card { 
         border-radius: 15px; 
         padding: 25px; 
@@ -101,7 +124,7 @@ st.markdown("""
         border: 1px solid #333; 
         position: relative; 
         overflow: hidden; 
-        height: 160px !important; /* FORÇA TODAS A TEREM A MESMA ALTURA */
+        height: 160px !important; 
         display: flex;
         flex-direction: column;
         justify-content: center;
