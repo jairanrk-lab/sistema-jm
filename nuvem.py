@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta  # Adicionado timedelta
 from fpdf import FPDF
 import gspread
 import os
@@ -11,7 +11,7 @@ import time as t_sleep
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide")
 
 # ==============================================================================
-# --- 2. SISTEMA DE LOGIN INTELIGENTE 🔒 ---
+# --- 2. SISTEMA DE LOGIN INTELIGENTE (COM SECRETS) 🔒 ---
 # ==============================================================================
 def check_password():
     try:
@@ -31,13 +31,22 @@ def check_password():
     pwd = st.text_input("Digite a senha de acesso:", type="password")
     
     if st.button("ACESSAR SISTEMA"):
-        if pwd == "J@i911458": 
-            st.session_state["password_correct"] = True
-            try: st.query_params["acesso_liberado"] = "sim_mestre"
-            except: pass
-            st.rerun()
-        else:
-            st.error("Senha incorreta.")
+        # LÓGICA SEGURA: Busca a senha no arquivo secrets.toml
+        try:
+            senha_correta = st.secrets["app"]["password"]
+            
+            if pwd == senha_correta: 
+                st.session_state["password_correct"] = True
+                try: st.query_params["acesso_liberado"] = "sim_mestre"
+                except: pass
+                st.rerun()
+            else:
+                st.error("Senha incorreta.")
+        except FileNotFoundError:
+            st.error("Erro: Arquivo secrets.toml não encontrado.")
+        except KeyError:
+            st.error("Erro: Senha não configurada no secrets.toml (seção [app]).")
+            
     return False
 
 if not check_password():
@@ -194,7 +203,10 @@ def formatar_moeda(valor):
 
 @st.cache_resource
 def conectar_google_sheets():
-    ID = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
+    # Tenta pegar o ID do Secrets, senão usa o padrão
+    try: ID = st.secrets["app"]["spreadsheet_id"]
+    except: ID = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
+    
     try:
         if os.path.exists("chave_google.json"): client = gspread.service_account(filename="chave_google.json")
         else: client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
@@ -274,8 +286,7 @@ def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
 
 # --- PÁGINAS ---
 def page_dashboard():
-    # --- AQUI ESTA A ALTERACAO DO TESTE (PAINEL TESTE 123) ---
-    st.markdown('<h1 class="custom-title"><i class="bi bi-speedometer2" style="color: #00B4DB;"></i> PAINEL GESTÃO PROFISSIONAL</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="custom-title"><i class="bi bi-speedometer2" style="color: #00B4DB;"></i> PAINEL GERAL</h1>', unsafe_allow_html=True)
     
     df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); df_a = carregar_dados("Agendamentos")
     receita, despesa, pendente, count_p, lucro_vendas = 0.0, 0.0, 0.0, 0, 0.0
@@ -425,19 +436,35 @@ def page_agendamento():
                     c1, c2 = st.columns(2)
                     with c1:
                         if st.button(f"CONCLUIR SERVIÇO", key=f"efet_{i}"):
+                            # 1. Cálculos Financeiros
                             fundo_caixa = total_val * 0.10
                             comissao = total_val * 0.40 if "Irmão" in r["Executor"] else 0.0
                             lucro_liq = total_val - fundo_caixa - comissao
+                            
+                            # 2. Lógica de Retorno (Vitrificação)
+                            data_retorno_str = ""
+                            if "vitrific" in r["Servicos"].lower():
+                                try:
+                                    dt_obj = datetime.strptime(r["Data"], "%d/%m/%Y")
+                                    dt_retorno = dt_obj + timedelta(days=180) # 6 Meses
+                                    data_retorno_str = dt_retorno.strftime("%d/%m/%Y")
+                                    st.toast(f"📅 Retorno de Vitrificação: {data_retorno_str}", icon="💎")
+                                except: pass
+
+                            # 3. Montagem do Objeto (Agora com Data Retorno)
                             nova_venda = {
                                 "Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], 
                                 "Total": total_val, "Status": "Concluído", "Pagamento": "-", "Funcionario": r["Executor"], 
                                 "Valor Comissao": comissao, "Fundo Caixa": fundo_caixa, "Lucro Liquido": lucro_liq, "Agendamentos": "",
-                                "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")
+                                "Status Comissao": "Pendente", "Categoria": r.get("Categoria", ""),
+                                "Data Retorno": data_retorno_str
                             }
+                            
+                            # 4. Transação
                             if salvar_no_google("Vendas", nova_venda):
                                 if excluir_agendamento(i): st.success("Serviço Concluído!"); t_sleep.sleep(1.5); st.rerun()
                                 else: st.warning("Salvo em Vendas, mas erro ao limpar da Agenda.")
-                            else: st.error("ERRO: Verifique se criou a coluna 'Categoria' na aba Vendas.")
+                            else: st.error("ERRO: Verifique se criou a coluna 'Categoria' e 'Data Retorno' na aba Vendas.")
                     with c2:
                         precos_pdf = {r["Servicos"]: total_val}
                         pdf_bytes = gerar_pdf(r["Cliente"], r["Veiculo"], r["Placa"], r["Data"], precos_pdf, total_val)
