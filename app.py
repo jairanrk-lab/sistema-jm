@@ -1,11 +1,3 @@
-Perfeito, Jairan! Recebi seu código.
-Fiz a alteração cirúrgica no CSS.
-O que eu mudei:
- * Removi a regra antiga que "matava" o cabeçalho (display: none).
- * Adicionei a regra da "Tinta Invisível": O texto keyboard_double_arrow_right vai ficar transparente.
- * Adicionei um "X" vermelho (#D90429) para aparecer no lugar do texto feio. Assim você vê onde clicar para fechar o menu, mantendo o visual profissional.
-📋 O Código Completo (V10.11)
-Pode copiar TUDO abaixo, apagar o que tem no seu arquivo app.py no GitHub e colar este novo.
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -464,4 +456,3 @@ elif menu == "HISTÓRICO": page_historico()
 
 # --- RODAPÉ FIXO ---
 st.markdown('<div class="footer">Desenvolvido por <b>Jairan Jesus Matos</b> | JM Detail System © 2026</div>', unsafe_allow_html=True)
-
