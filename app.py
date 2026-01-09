@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.17 - BURACO NEGRO VISUAL) ---
+# --- 3. ESTILO CSS (V10.18 - ESTRATÉGIA CAMUFLAGEM NINJA) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,58 +56,56 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. TÉCNICA "BURACO NEGRO" (TEXT INDENT) --- */
-    /* Essa técnica joga o texto a 9999px para fora da tela, impossível de ver */
+    /* --- 2. CAMUFLAGEM NINJA (Preto no Preto) --- */
+    /* Se não dá pra sumir, vamos pintar da cor do fundo pra ficar invisível */
 
     [data-testid="stSidebarCollapsedControl"] button, 
     [data-testid="stSidebarHeader"] button {
-        text-indent: -9999px !important; /* Joga o texto pra Lua */
-        white-space: nowrap !important;  /* Impede quebra de linha */
-        overflow: hidden !important;     /* Garante que não vaze */
+        color: #000000 !important; /* TEXTO FICA PRETO (Igual ao fundo) */
+        fill: #000000 !important;
+        caret-color: #000000 !important;
+        background-color: transparent !important;
+        border: none !important;
         width: 60px !important;
         height: 60px !important;
-        background: transparent !important;
-        border: none !important;
-        position: relative !important; /* Necessário para posicionar o ícone novo */
-        color: transparent !important; /* Garantia extra */
+        overflow: visible !important; /* Permite que nosso ícone apareça */
+        position: relative !important;
+        z-index: 100 !important;
     }
 
-    /* Mata qualquer ícone SVG original do Streamlit */
-    [data-testid="stSidebarCollapsedControl"] button svg,
-    [data-testid="stSidebarHeader"] button svg {
-        display: none !important;
+    /* Mata os filhos internos com display none só pra garantir */
+    [data-testid="stSidebarCollapsedControl"] button > *,
+    [data-testid="stSidebarHeader"] button > * {
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
 
-    /* CRIA O ÍCONE NOVO (☰) - Posicionado Absolutamente no Centro */
+    /* ÍCONE DE ABRIR (☰) - Cor VERMELHA (Destaque) */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
-        text-indent: 0px !important; /* Traz o indent de volta pra zero SÓ pro ícone */
-        position: absolute !important;
-        top: 10px !important;
-        left: 0 !important;
-        width: 100% !important;
-        text-align: center !important;
+        color: #D90429 !important; /* NOSSO ÍCONE É VERMELHO */
         font-size: 40px !important; 
-        color: #D90429 !important; /* Vermelho JM */
         font-weight: 800 !important;
-        display: block !important;
+        position: absolute !important;
+        top: 5px !important;
+        left: 0px !important;
         visibility: visible !important;
+        display: block !important;
+        z-index: 102 !important; /* Fica por cima do texto preto */
     }
 
-    /* CRIA O ÍCONE NOVO (✖) */
+    /* ÍCONE DE FECHAR (✖) - Cor CINZA CLARO */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
-        text-indent: 0px !important;
+        color: #888 !important; /* NOSSO ÍCONE É CLARO */
+        font-size: 30px !important;
+        font-weight: bold !important;
         position: absolute !important;
         top: 15px !important;
-        left: 0 !important;
-        width: 100% !important;
-        text-align: center !important;
-        font-size: 30px !important;
-        color: #666 !important; 
-        font-weight: bold !important;
-        display: block !important;
+        left: 10px !important;
         visibility: visible !important;
+        display: block !important;
+        z-index: 102 !important;
     }
     
     /* Hover */
