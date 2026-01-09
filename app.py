@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V10.19 - A BALA DE PRATA / SNIPER) ---
+# --- 3. ESTILO CSS (V10.20 - ALVO CONFIRMADO PELO PRINT) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -56,14 +56,15 @@ st.markdown("""
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-bottom: 6rem; }
 
-    /* --- 2. O TIRO DE SNIPER (Baseado na sua foto do Inspecionar) --- */
+    /* --- 2. O EXTERMINADOR DO TEXTO (Baseado no seu print) --- */
     
-    /* ALVO: O elemento exato que segura o texto 'keyboard_double_arrow...' */
+    /* ALVO: O elemento stIconMaterial que segura o texto feio */
+    /* Essa regra diz: "Dentro do controle da sidebar, o ícone material DEVE SUMIR" */
     [data-testid="stSidebarCollapsedControl"] [data-testid="stIconMaterial"],
     [data-testid="stSidebarHeader"] [data-testid="stIconMaterial"] {
-        display: none !important; /* REMOVE O TEXTO DO MAPA */
-        opacity: 0 !important;
+        display: none !important; /* TCHAU, QUERIDO! */
         visibility: hidden !important;
+        opacity: 0 !important;
         font-size: 0 !important;
     }
 
@@ -77,7 +78,7 @@ st.markdown("""
         height: 60px !important;
     }
 
-    /* RECRIA O ÍCONE DE ABRIR (☰) */
+    /* RECRIA O ÍCONE DE ABRIR (☰) - Menu Hamburguer */
     [data-testid="stSidebarCollapsedControl"] button::after {
         content: "☰"; 
         color: #D90429 !important; /* Vermelho JM */
@@ -88,11 +89,11 @@ st.markdown("""
         left: 0px !important;
         width: 100% !important;
         text-align: center !important;
-        visibility: visible !important;
+        visibility: visible !important; /* Garante que ISSO seja visível */
         display: block !important;
     }
 
-    /* RECRIA O ÍCONE DE FECHAR (✖) */
+    /* RECRIA O ÍCONE DE FECHAR (✖) - Xis */
     [data-testid="stSidebarHeader"] button::after {
         content: "✖"; 
         color: #666 !important; /* Cinza */
@@ -107,7 +108,7 @@ st.markdown("""
         display: block !important;
     }
     
-    /* Hover Vermelho no X */
+    /* Efeito Hover: Fica vermelho quando passa o mouse/dedo */
     [data-testid="stSidebarHeader"] button:hover::after { color: #D90429 !important; }
 
     /* --- SIDEBAR RESPONSIVA --- */
