@@ -51,7 +51,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "V6.7 - CALENDÁRIO 100% BRANCO" 🌑 ---
+# --- 3. ESTILO CSS "V6.8 - CALENDÁRIO IMPECÁVEL" 🌑 ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -101,45 +101,47 @@ st.markdown("""
     .stTextInput input, .stNumberInput input, .stDateInput input, .stTimeInput input { background-color: #ffffff !important; border: 1px solid #333 !important; }
 
     /* ========================================================================= */
-    /* --- CORREÇÃO TOTAL DO CALENDÁRIO (FIX BARRA PRETA) --- */
+    /* --- CORREÇÃO TOTAL DO CALENDÁRIO (FIX DA MANCHA PRETA) --- */
     /* ========================================================================= */
     
-    /* 1. Container Principal do Calendário (Pop-up) */
+    /* 1. Container e Popover */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] > div,
     div[data-baseweb="calendar"] {
         background-color: #ffffff !important;
-        border: 1px solid #ccc !important;
     }
 
-    /* 2. Força TODO texto dentro do calendário a ser PRETO */
-    div[data-baseweb="calendar"] * {
-        color: #000000 !important;
-        background-color: transparent !important; /* Remove fundos pretos herdados */
-    }
-
-    /* 3. Container do Cabeçalho (Onde ficam os dias da semana e botões) */
-    /* Essa regra especificamente mata a barra preta */
-    div[data-baseweb="calendar"] div[aria-label^="Month"], 
-    div[data-baseweb="calendar"] div[role="grid"] {
+    /* 2. REGRA MASTER: Força TODOS os elementos internos a serem brancos */
+    /* Isso elimina os blocos pretos dos dias vazios */
+    div[data-baseweb="calendar"] div {
         background-color: #ffffff !important;
+        color: #000000 !important;
     }
 
-    /* 4. Botão do Dia Selecionado (Vermelho) */
-    div[data-baseweb="calendar"] button[aria-selected="true"] {
+    /* 3. Cabeçalho do Mês (Month Year) */
+    div[data-baseweb="calendar"] div[aria-label^="Month"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* 4. Botão do Dia Selecionado (Vermelho) - PRECISA DE ALTA PRIORIDADE */
+    /* Temos que sobrescrever a regra 2 aqui */
+    div[data-baseweb="calendar"] button[aria-selected="true"],
+    div[data-baseweb="calendar"] button[aria-selected="true"] div {
         background-color: #D90429 !important;
-        color: white !important;
-    }
-    
-    /* 5. Hover nos dias */
-    div[data-baseweb="calendar"] button:hover {
-        background-color: #f0f0f0 !important;
+        color: #ffffff !important;
     }
 
-    /* 6. Setas de Navegação (Mês Anterior/Próximo) */
+    /* 5. Setas de Navegação */
     div[data-baseweb="calendar"] button svg {
         fill: #000000 !important;
         color: #000000 !important;
+    }
+
+    /* 6. Hover nos dias */
+    div[data-baseweb="calendar"] button:hover {
+        background-color: #f0f0f0 !important;
+        cursor: pointer !important;
     }
     /* ========================================================================= */
 
@@ -483,7 +485,7 @@ with st.sidebar:
         progresso = min(total_vendido / META_MENSAL, 1.0)
         st.markdown(f"""<div style="background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px;"><p style="margin: 0; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-crosshair" style="color:#D90429"></i> Meta do Mês</p><p style="margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: #FFF;">{formatar_moeda(total_vendido)} <span style="font-size:14px; color:#666; font-weight:normal;">/ {formatar_moeda(META_MENSAL)}</span></p></div>""", unsafe_allow_html=True)
         st.progress(progresso)
-    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.7 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #444; font-size: 11px; margin-top: 30px;'>v6.8 Maxton Graphics • Jairan Jesus Matos</div>", unsafe_allow_html=True)
 
 if menu == "DASHBOARD": page_dashboard()
 elif menu == "AGENDAMENTO": page_agendamento()
