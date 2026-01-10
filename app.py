@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V13.0 - BLINDADO) ---
+# --- 3. ESTILO CSS (V14.0 - LAYOUT BLOCOS WIDE) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -60,55 +60,56 @@ st.markdown("""
     [data-testid="stSidebarCollapsedControl"] { display: none !important; }
     [data-testid="stSidebar"] { display: none !important; }
 
-    /* --- NAVEGAÇÃO SUPERIOR COM ÍCONES REAIS (CSS TRICK) --- */
+    /* --- NAVEGAÇÃO SUPERIOR ESTICADA EM BLOCOS (MODIFICADO) --- */
     div[role="radiogroup"] {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        background-color: #111;
-        border-radius: 12px;
-        padding: 5px;
-        border: 1px solid #333;
-        overflow-x: auto;
-        gap: 8px;
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important; /* Força largura total */
+        justify-content: space-between !important;
+        background-color: transparent !important; /* Remove fundo da barra única */
+        border: none !important;
+        padding: 0 !important;
+        gap: 12px !important; /* Cria a separação entre blocos */
+        overflow: visible !important;
     }
     
     div[role="radiogroup"] label {
-        background-color: transparent !important;
-        border: 1px solid transparent !important;
-        padding: 10px 20px !important;
+        flex: 1 !important; /* Faz cada botão esticar para preencher o espaço */
+        background-color: #111 !important; /* Fundo escuro em cada bloco */
+        border: 1px solid #333 !important;
+        padding: 12px 5px !important; /* Altura do botão */
         border-radius: 8px !important;
         transition: all 0.3s ease !important;
         margin: 0 !important;
         color: #888 !important;
         font-weight: 600 !important;
-        font-size: 14px !important;
+        font-size: 16px !important; /* Fonte um pouco maior */
         white-space: nowrap !important;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: center !important; /* Centraliza conteúdo no bloco */
     }
 
     /* --- INJEÇÃO DOS ÍCONES BOOTSTRAP (O SEGREDO) --- */
     div[role="radiogroup"] label:nth-of-type(1)::before {
         font-family: "bootstrap-icons"; content: "\\F5A6"; 
-        margin-right: 8px; font-size: 16px;
+        margin-right: 8px; font-size: 18px; /* Ícone um pouco maior */
     }
     div[role="radiogroup"] label:nth-of-type(2)::before {
         font-family: "bootstrap-icons"; content: "\\F20E"; 
-        margin-right: 8px; font-size: 16px;
+        margin-right: 8px; font-size: 18px;
     }
     div[role="radiogroup"] label:nth-of-type(3)::before {
         font-family: "bootstrap-icons"; content: "\\F23E"; 
-        margin-right: 8px; font-size: 16px;
+        margin-right: 8px; font-size: 18px;
     }
     div[role="radiogroup"] label:nth-of-type(4)::before {
         font-family: "bootstrap-icons"; content: "\\F4E9"; 
-        margin-right: 8px; font-size: 16px;
+        margin-right: 8px; font-size: 18px;
     }
     div[role="radiogroup"] label:nth-of-type(5)::before {
         font-family: "bootstrap-icons"; content: "\\F291"; 
-        margin-right: 8px; font-size: 16px;
+        margin-right: 8px; font-size: 18px;
     }
 
     /* Hover */
@@ -116,6 +117,7 @@ st.markdown("""
         border-color: #D90429 !important;
         color: white !important;
         background-color: #1a1a1a !important;
+        transform: translateY(-2px); /* Efeito de elevação leve */
     }
 
     /* Botão Selecionado (ATIVO) */
@@ -123,7 +125,7 @@ st.markdown("""
         background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important;
         color: white !important;
         border-color: #D90429 !important;
-        box-shadow: 0 0 12px rgba(217, 4, 41, 0.5) !important;
+        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important;
     }
     
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p { margin: 0; }
