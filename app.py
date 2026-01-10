@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V12.1 - ÍCONES BOOTSTRAP EM TUDO) ---
+# --- 3. ESTILO CSS (V13.0 - ÍCONES REAIS INJETADOS) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -60,7 +60,7 @@ st.markdown("""
     [data-testid="stSidebarCollapsedControl"] { display: none !important; }
     [data-testid="stSidebar"] { display: none !important; }
 
-    /* --- NAVEGAÇÃO SUPERIOR COM ÍCONES REAIS (CSS INJECTION) --- */
+    /* --- NAVEGAÇÃO SUPERIOR COM ÍCONES REAIS (CSS TRICK) --- */
     div[role="radiogroup"] {
         display: flex;
         flex-direction: row;
@@ -87,41 +87,37 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
     }
 
-    /* INJEÇÃO DOS ÍCONES BOOTSTRAP NO MENU (A Mágica acontece aqui) */
+    /* --- INJEÇÃO DOS ÍCONES BOOTSTRAP (O SEGREDO) --- */
+    /* Cada linha abaixo coloca um ícone específico antes do texto do botão */
     
-    /* 1. Dashboard */
+    /* 1. Dashboard -> Speedometer */
     div[role="radiogroup"] label:nth-of-type(1)::before {
-        font-family: "bootstrap-icons"; content: "\\F5A6"; /* Speedometer */
+        font-family: "bootstrap-icons"; content: "\\F5A6"; 
         margin-right: 8px; font-size: 16px;
     }
-    
-    /* 2. Agenda */
+    /* 2. Agenda -> Calendar Check */
     div[role="radiogroup"] label:nth-of-type(2)::before {
-        font-family: "bootstrap-icons"; content: "\\F20E"; /* Calendar Check */
+        font-family: "bootstrap-icons"; content: "\\F20E"; 
         margin-right: 8px; font-size: 16px;
     }
-
-    /* 3. Financeiro */
+    /* 3. Financeiro -> Cash Coin */
     div[role="radiogroup"] label:nth-of-type(3)::before {
-        font-family: "bootstrap-icons"; content: "\\F23E"; /* Cash Coin */
+        font-family: "bootstrap-icons"; content: "\\F23E"; 
         margin-right: 8px; font-size: 16px;
     }
-
-    /* 4. Despesas */
+    /* 4. Despesas -> Receipt */
     div[role="radiogroup"] label:nth-of-type(4)::before {
-        font-family: "bootstrap-icons"; content: "\\F4E9"; /* Receipt */
+        font-family: "bootstrap-icons"; content: "\\F4E9"; 
+        margin-right: 8px; font-size: 16px;
+    }
+    /* 5. Histórico -> Clock History */
+    div[role="radiogroup"] label:nth-of-type(5)::before {
+        font-family: "bootstrap-icons"; content: "\\F291"; 
         margin-right: 8px; font-size: 16px;
     }
 
-    /* 5. Histórico */
-    div[role="radiogroup"] label:nth-of-type(5)::before {
-        font-family: "bootstrap-icons"; content: "\\F291"; /* Clock History */
-        margin-right: 8px; font-size: 16px;
-    }
-    
     /* Hover */
     div[role="radiogroup"] label:hover {
         border-color: #D90429 !important;
@@ -163,7 +159,7 @@ st.markdown("""
     .bg-purple { background: linear-gradient(145deg, #8E2DE2, #4A00E0); }
     .bg-dark { background: linear-gradient(145deg, #222, #111); }
 
-    /* --- CARDS LISTA --- */
+    /* --- CARDS LISTA (AGENDA/HISTÓRICO) --- */
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
 
@@ -235,6 +231,7 @@ def carregar_catalogo():
         "Vitrificação": [800.0, 900.0, 1100.0, 1300.0, 1300.0, 500.0]
     })
 
+# Ícone HTML para os Cards
 def obter_icone_html(cat):
     if not isinstance(cat, str): return '<i class="bi bi-car-front-fill"></i>'
     c = cat.lower()
@@ -275,7 +272,7 @@ with c_logo2:
 
 st.write("") 
 
-# MENU DE NAVEGAÇÃO (Texto Limpo - Ícones vêm via CSS)
+# MENU DE NAVEGAÇÃO (Texto Limpo - Ícones vêm via CSS, como você pediu)
 menu_opcoes = ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
 menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 
@@ -326,7 +323,8 @@ def page_dashboard():
     col_graf, col_prox = st.columns([2, 1])
     
     with col_graf:
-        st.markdown('### 📈 Performance Mensal')
+        # Título com o ícone Verde Neon (Pedido V13)
+        st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
             base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
             bars = base.mark_bar(size=30, cornerRadiusEnd=5).encode(
@@ -347,7 +345,7 @@ def page_dashboard():
         st.plotly_chart(fig, use_container_width=True)
 
     with col_prox:
-        st.markdown('### <i class="bi bi-calendar-range"></i> Próximos', unsafe_allow_html=True)
+        st.markdown('### <i class="bi bi-calendar-week"></i> Próximos na Agenda', unsafe_allow_html=True)
         if not df_a.empty:
             df_a['Data_dt'] = pd.to_datetime(df_a['Data'], format='%d/%m/%Y', errors='coerce')
             hoje_dt = pd.to_datetime(date.today())
