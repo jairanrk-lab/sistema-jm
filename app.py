@@ -6,8 +6,8 @@ from fpdf import FPDF
 import gspread
 import os
 import time as t_sleep
-import re
-import urllib.parse # Biblioteca para corrigir os símbolos do WhatsApp
+import re # IMPORTANTE: Para limpar o telefone
+import urllib.parse # IMPORTANTE: Para corrigir os acentos no WhatsApp
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
@@ -42,31 +42,50 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS ---
+# --- 3. ESTILO CSS (VISUAL PREMIUM MANTIDO) ---
 # ==============================================================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
+    
     * { font-family: 'Poppins', sans-serif !important; }
+    
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
-    div[role="radiogroup"] { display: flex !important; flex-direction: row !important; width: 100% !important; justify-content: space-between !important; background-color: transparent !important; border: none !important; padding: 0 !important; gap: 12px !important; }
-    div[role="radiogroup"] label { flex: 1 !important; background-color: #111 !important; border: 1px solid #333 !important; padding: 12px 5px !important; border-radius: 8px !important; transition: all 0.3s ease !important; margin: 0 !important; color: #888 !important; font-weight: 600 !important; font-size: 16px !important; white-space: nowrap !important; display: flex; align-items: center; justify-content: center !important; }
+
+    /* MENU SUPERIOR EM BLOCOS */
+    div[role="radiogroup"] {
+        display: flex !important; flex-direction: row !important; width: 100% !important;
+        justify-content: space-between !important; background-color: transparent !important;
+        border: none !important; padding: 0 !important; gap: 12px !important;
+    }
+    div[role="radiogroup"] label {
+        flex: 1 !important; background-color: #111 !important; border: 1px solid #333 !important;
+        padding: 12px 5px !important; border-radius: 8px !important; transition: all 0.3s ease !important;
+        margin: 0 !important; color: #888 !important; font-weight: 600 !important;
+        font-size: 16px !important; white-space: nowrap !important; display: flex;
+        align-items: center; justify-content: center !important;
+    }
+    /* Ícones do Menu */
     div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 8px; font-size: 18px; }
+
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: #1a1a1a !important; transform: translateY(-2px); }
     div[role="radiogroup"] label[data-checked="true"] { background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important; color: white !important; border-color: #D90429 !important; box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important; }
+    
+    /* CARDS */
     .dash-card { border-radius: 15px; padding: 20px; color: white; margin-bottom: 20px; border: 1px solid #333; position: relative; overflow: hidden; height: 140px !important; display: flex; flex-direction: column; justify-content: center; }
     .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.15 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
     .bg-orange { background: linear-gradient(145deg, #FF9800, #F57C00); }
     .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
     .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
     .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
+    
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
@@ -76,9 +95,10 @@ st.markdown("""
 
 # --- FUNÇÕES AUXILIARES ---
 
+# --- NOVA FUNÇÃO: LIMPA NÚMERO PARA WHATSAPP ---
 def limpar_numero(num):
-    """Corrige o erro de URL inválida removendo símbolos do telefone"""
     if not num: return ""
+    # Remove tudo que não for número (parenteses, traço, espaço)
     return re.sub(r'\D', '', str(num))
 
 def formatar_moeda(valor):
@@ -86,15 +106,22 @@ def formatar_moeda(valor):
     except: return "R$ 0,00"
 
 def conectar_google_sheets():
+    # ID FIXO QUE VOCÊ CONFIRMOU
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
             ID_FIXO = st.secrets["app"]["spreadsheet_id"]
-        if os.path.exists("chave_google.json"): client = gspread.service_account(filename="chave_google.json")
-        elif "gcp_service_account" in st.secrets: client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
-        else: return None
+        if os.path.exists("chave_google.json"): 
+            client = gspread.service_account(filename="chave_google.json")
+        elif "gcp_service_account" in st.secrets:
+            client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
+        else:
+            st.error("🚨 ERRO CRÍTICO: Credenciais não encontradas.")
+            return None
         return client.open_by_key(ID_FIXO)
-    except: return None
+    except Exception as e:
+        st.error(f"🚨 ERRO DE CONEXÃO: {e}")
+        return None
 
 def carregar_dados(aba):
     sheet = conectar_google_sheets()
@@ -109,7 +136,15 @@ def salvar_no_google(aba, linha_dados):
         ws = sheet.worksheet(aba)
         headers = ws.row_values(1)
         if not headers: headers = list(linha_dados.keys()); ws.append_row(headers)
-        nova_linha = [linha_dados.get(h, "") for h in headers]
+        nova_linha = [''] * len(headers)
+        for col_name, valor in linha_dados.items():
+            if col_name in headers:
+                index = headers.index(col_name)
+                nova_linha[index] = valor
+            else:
+                # Tenta achar coluna similar
+                alt = col_name.replace("ç", "c") if "ç" in col_name else col_name.replace("c", "ç")
+                if alt in headers: index = headers.index(alt); nova_linha[index] = valor
         ws.append_row(nova_linha)
         return True, "Sucesso"
     except Exception as e: return False, str(e)
@@ -126,13 +161,26 @@ def carregar_catalogo():
         sheet = conectar_google_sheets()
         if sheet:
             ws = sheet.worksheet("Catalogo")
-            df = pd.DataFrame(ws.get_all_records())
-            if not df.empty:
+            dados = ws.get_all_records()
+            df = pd.DataFrame(dados)
+            if not df.empty and "Categoria" in df.columns:
                 cols_num = [c for c in df.columns if c != "Categoria"]
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
-    return pd.DataFrame({"Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Moto (até 300cc)", "Moto (acima 300cc)"], "Lavagem Simples": [40, 50, 60, 70, 80, 0, 0], "Lavagem Técnica": [150, 170, 190, 210, 230, 50, 100]})
+    
+    return pd.DataFrame({
+        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
+        "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
+        "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
+        "Higi. Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0], 
+        "Higi. Interna (Teto/Carpete)": [150.0, 150.0, 180.0, 200.0, 250.0, 0.0],
+        "Combo Premium": [300.0, 320.0, 350.0, 400.0, 450.0, 0.0],
+        "Limpeza Motor": [100.0, 100.0, 120.0, 150.0, 150.0, 80.0],
+        "Faróis": [200.0, 200.0, 200.0, 200.0, 200.0, 100.0],
+        "Cristalização Vidros": [90.0, 120.0, 150.0, 150.0, 150.0, 50.0],
+        "Vitrificação": [800.0, 900.0, 1100.0, 1300.0, 1300.0, 500.0]
+    })
 
 def obter_icone_html(cat):
     if not isinstance(cat, str): return '<i class="bi bi-car-front-fill"></i>'
@@ -142,163 +190,345 @@ def obter_icone_html(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
     else: return '<i class="bi bi-car-front-fill"></i>'
 
+# --- BUSCA INTELIGENTE POR PLACA (COM CORREÇÃO DE TELEFONE) ---
 def buscar_cliente_por_placa(placa_busca):
     df_a = carregar_dados("Agendamentos")
     df_v = carregar_dados("Vendas")
     df_c = pd.concat([df_a, df_v], ignore_index=True)
     if df_c.empty: return None
+    
     placa_clean = placa_busca.replace("-", "").strip().upper()
-    df_c.columns = [c.strip().capitalize() for c in df_c.columns]
-    if "Placa" in df_c.columns:
-        df_c["Placa"] = df_c["Placa"].astype(str).str.replace("-", "").str.strip().str.upper()
-        res = df_c[df_c["Placa"] == placa_clean]
+    
+    # Mapeia colunas para evitar erros de maiúscula/minúscula
+    cols = {c.lower(): c for c in df_c.columns}
+    col_placa = cols.get("placa")
+    
+    if col_placa:
+        df_c[col_placa] = df_c[col_placa].astype(str).str.replace("-", "").str.strip().str.upper()
+        res = df_c[df_c[col_placa] == placa_clean]
+        
         if not res.empty:
             u = res.iloc[-1]
-            tel = u.get("Telefone") or u.get("Whatsapp") or ""
-            return {"Cliente": u.get("Cliente", ""), "Telefone": str(tel), "Veiculo": u.get("Veiculo", u.get("Carro", "")), "Categoria": u.get("Categoria", "")}
+            # Procura telefone em várias opções de nome
+            col_tel = cols.get("telefone") or cols.get("whatsapp") or cols.get("celular")
+            tel = u.get(col_tel, "") if col_tel else ""
+            
+            col_cli = cols.get("cliente", "Cliente")
+            col_veic = cols.get("veiculo") or cols.get("carro") or "Veiculo"
+            col_cat = cols.get("categoria", "Categoria")
+            
+            return {
+                "Cliente": u.get(col_cli, ""),
+                "Telefone": str(tel),
+                "Veiculo": u.get(col_veic, ""),
+                "Categoria": u.get(col_cat, "")
+            }
     return None
 
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
-    logo = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
-    if logo: pdf.image(logo, x=10, y=8, w=35)
+    logo_file = None
+    if os.path.exists("logo.png"): logo_file = "logo.png"
+    elif os.path.exists("Logo.png"): logo_file = "Logo.png"
+    
+    if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
+    
     def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
-    pdf.set_y(25); pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
-    pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt("Estética Automotiva Premium | (75) 99830-3753"), ln=True, align='C'); pdf.ln(10)
-    pdf.set_font("Arial", "B", 12); pdf.cell(0, 8, txt(f"CLIENTE: {dados['Cliente']}"), ln=True)
-    pdf.cell(0, 8, txt(f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
-    pdf.cell(0, 8, txt(f"DATA: {dados['Data']}"), ln=True); pdf.ln(5)
-    pdf.set_fill_color(220, 220, 220); pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1); pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, txt("Estética Automotiva Premium | (75) 99830-3753"), ln=True, align='C')
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt(f"CLIENTE: {dados['Cliente']}"), ln=True)
+    pdf.cell(0, 10, txt(f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
+    pdf.cell(0, 10, txt(f"DATA: {dados['Data']}"), ln=True); pdf.ln(5)
+    
+    pdf.set_fill_color(220, 220, 220)
+    pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1)
+    pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
+    
     pdf.set_font("Arial", size=12)
-    for s in str(dados['Servicos']).split(','):
+    servicos = dados['Servicos'].split(',')
+    for s in servicos:
         if s.strip():
-            pdf.cell(140, 10, txt(s.strip()), 1); pdf.cell(50, 10, txt("-"), 1, 1, 'C')
-    pdf.ln(5); pdf.set_font("Arial", "B", 14); pdf.cell(140, 10, "TOTAL ESTIMADO", 1, 0, 'R'); pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
-    pdf.ln(20); sig = next((f for f in ["assinatura.png", "Assinatura.png"] if os.path.exists(f)), None)
-    if sig: pdf.image(sig, x=80, y=pdf.get_y()-10, w=50)
-    pdf.cell(0, 10, "________________________________________", ln=True, align='C'); pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
+            pdf.cell(140, 10, txt(s.strip()), 1)
+            pdf.cell(50, 10, "", 1, 1, 'C') # CORREÇÃO: Tirado o "-" para ficar limpo
+            
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(140, 10, "TOTAL ESTIMADO", 1, 0, 'R')
+    pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
+    
+    pdf.ln(20)
+    sig_file = None
+    if os.path.exists("assinatura.png"): sig_file = "assinatura.png"
+    elif os.path.exists("Assinatura.png"): sig_file = "Assinatura.png"
+    
+    if sig_file:
+        x_centered = (210 - 50) / 2
+        pdf.image(sig_file, x=x_centered, y=pdf.get_y() - 15, w=50)
+    
+    pdf.cell(0, 10, "________________________________________", ln=True, align='C')
+    pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
-# --- LAYOUT PRINCIPAL ---
+# --- CABEÇALHO ---
 # ==============================================================================
 c_logo1, c_logo2, c_logo3 = st.columns([1,2,1])
 with c_logo2:
-    logo_path = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
+    logo_path = None
+    if os.path.exists("logo.png"): logo_path = "logo.png"
+    elif os.path.exists("Logo.png"): logo_path = "Logo.png"
+    
     if logo_path: st.image(logo_path, use_container_width=True)
     else: st.markdown("<h1 style='text-align:center; color:#D90429; font-weight:800'>JM DETAIL</h1>", unsafe_allow_html=True)
 
 st.write("") 
-menu_selecionado = st.radio("Navegação", ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"], horizontal=True, label_visibility="collapsed")
+menu_opcoes = ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
+menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 st.write("---") 
 
-# --- DASHBOARD ---
+# --- PÁGINAS ---
+
 def page_dashboard():
     hoje = datetime.now()
+    mes_atual, ano_atual = hoje.month, hoje.year
+    nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
+    st.markdown(f'## <i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel Geral <small style="font-size:14px; color:#888">| {nome_meses[mes_atual]}/{ano_atual}</small>', unsafe_allow_html=True)
+    
     df_v = carregar_dados("Vendas")
     df_d = carregar_dados("Despesas")
+    
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
+    lucro_operacional = 0.0
     
     if not df_v.empty:
-        df_v.columns = [c.strip().capitalize() for c in df_v.columns]
+        # CORREÇÃO: Limpeza de colunas e dados
+        df_v.columns = [c.strip() for c in df_v.columns]
         for c in ["Total"]:
-            if c in df_v.columns: df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+            if c in df_v.columns:
+                df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+        
+        # CORREÇÃO: Leitura flexível da data (dayfirst=True resolve o problema de dashboard zerado)
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
-        df_mes = df_v[(df_v['Data_dt'].dt.month == hoje.month) & (df_v['Data_dt'].dt.year == hoje.year)]
-        receita_mes = df_mes[df_mes["Status"].str.strip()=="Concluído"]["Total"].sum()
-        pendente_total = df_v[df_v["Status"].str.contains("Pendente|Orçamento", na=False)]["Total"].sum()
-        count_p = len(df_v[df_v["Status"].str.contains("Pendente|Orçamento", na=False)])
+        
+        df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
+        
+        if "Status" in df_v.columns:
+            receita_mes = df_mes[df_mes["Status"].str.strip() == "Concluído"]["Total"].sum()
+            pendente_total = df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)]["Total"].sum()
+            count_p = len(df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)])
+            lucro_operacional = receita_mes * 0.50
 
     if not df_d.empty:
-        df_d.columns = [c.strip().capitalize() for c in df_d.columns]
+        df_d.columns = [c.strip() for c in df_d.columns]
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
-        df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
-        despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
+        df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
+        if "Valor" in df_d.columns:
+            despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
     
-    lucro_final = (receita_mes * 0.50) - despesa_mes
-    META = 5000.00 
-    pct = min((receita_mes / META) * 100, 100.0)
-    st.markdown(f'<div style="background:#161616;padding:10px 15px;border-radius:12px;border:1px solid #333;margin-bottom:20px;"><div style="display:flex;justify-content:space-between;color:#bbb;font-size:12px;margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%;background:#333;border-radius:15px;height:22px;"><div style="width:{pct}%;background:linear-gradient(90deg,#00b09b,#96c93d);height:22px;border-radius:15px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;box-shadow:0 0 10px rgba(150,201,61,0.5);"><span style="color:white;font-weight:bold;font-size:12px;text-shadow:1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
+    lucro_final = lucro_operacional - despesa_mes
+    
+    # --- BARRA DE META ---
+    META_MENSAL = 5000.00 
+    if META_MENSAL > 0:
+        pct_real = (receita_mes / META_MENSAL) * 100
+        largura_visual = min(pct_real, 100.0)
+        st.markdown(f"""
+        <div style="background-color: #161616; padding: 10px 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;">
+                <span>🎯 META: {formatar_moeda(META_MENSAL)}</span>
+                <span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span>
+            </div>
+            <div style="width:100%; background-color:#333; border-radius:15px; height:22px;">
+                <div style="width:{largura_visual}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);">
+                    <span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct_real:.1f}%</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
-    c1.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} na fila</small></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Mês Atual</small></div>', unsafe_allow_html=True)
+    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
+    
     c3, c4 = st.columns(2)
-    c3.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos</small></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
+    cor_lucro = "bg-green" if lucro_final >= 0 else "bg-red"
+    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
 
-# --- AGENDA ---
+    st.write("---")
+    
+    if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
+        st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance', unsafe_allow_html=True)
+        base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
+        bars = base.mark_bar(size=30, cornerRadiusEnd=5).encode(
+            y=alt.Y('Total', axis=None),
+            color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None),
+            tooltip=['Data', 'Cliente', 'Carro', 'Total']
+        )
+        st.altair_chart(bars.properties(height=300, background='transparent'), use_container_width=True)
+
 def page_agendamento():
-    st.markdown('## <i class="bi bi-calendar-check" style="color: white;"></i> Agenda')
-    t1, t2 = st.tabs(["NOVO AGENDAMENTO", "LISTA DE SERVIÇOS"])
+    st.markdown('## <i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada', unsafe_allow_html=True)
+    tab_new, tab_list = st.tabs(["NOVO AGENDAMENTO", "LISTA DE SERVIÇOS"]) 
     df_cat = carregar_catalogo()
     
-    with t1:
+    with tab_new:
         with st.container(border=True):
-            p_in = st.text_input("🔍 Placa")
-            v_cli, v_veic, v_zap, v_cat_idx = "", "", "", 0
-            if p_in:
-                d_c = buscar_cliente_por_placa(p_in)
-                if d_c: v_cli, v_veic, v_zap = d_c['Cliente'], d_c['Veiculo'], d_c['Telefone']
+            c_placa, c_buscar = st.columns([3, 1])
+            placa_input = c_placa.text_input("Digite a Placa para Buscar Cadastro (ou Nova Placa)", key="placa_input")
             
-            c1, c2 = st.columns(2)
-            cli = c1.text_input("Nome", value=v_cli); zap = c2.text_input("WhatsApp", value=v_zap)
-            c3, c4 = st.columns(2)
-            veic = c3.text_input("Veículo", value=v_veic); dt = c4.date_input("Data", value=date.today()); hr = c4.time_input("Hora", value=time(8,0)).strftime("%H:%M")
-            cat = st.selectbox("Categoria:", df_cat["Categoria"])
-            servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c != "Categoria"])
-            ext = st.number_input("Extra", min_value=0.0); qm = st.radio("Executor:", ["Eu Mesmo", "Equipe"])
+            val_cli, val_veic, val_zap, val_cat_idx = "", "", "", 0
             
-            if servs:
-                total = sum([float(df_cat[df_cat["Categoria"] == cat][s].values[0]) for s in servs]) + ext
-                st.markdown(f"<h3 style='text-align:right; color:#39FF14'>Total: {formatar_moeda(total)}</h3>", unsafe_allow_html=True)
-                
-                b1, b2 = st.columns(2)
-                if b1.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
-                    d = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Telefone": zap, "Veiculo": veic, "Placa": p_in, "Servicos": ", ".join(servs), "Total": total, "Executor": qm, "Status": "Orçamento/Pendente", "Categoria": cat}
-                    if salvar_no_google("Agendamentos", d)[0]:
-                        st.success("Salvo!"); t_sleep.sleep(1)
-                        if zap: 
-                            z_cl = limpar_numero(zap)
-                            txt_w = urllib.parse.quote(f"Olá {cli}, agendamento confirmado na JM Detail! \n🚗 {veic} \n📅 {dt.strftime('%d/%m/%Y')} às {hr} \n💰 Total: {formatar_moeda(total)}")
-                            st.markdown(f'<a href="https://wa.me/55{z_cl}?text={txt_w}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ZAP CONFIRMAÇÃO</button></a>', unsafe_allow_html=True)
-                
-                if b2.button("📄 GERAR PDF", use_container_width=True):
-                    st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento({"Cliente": cli, "Veiculo": veic, "Placa": p_in, "Data": dt.strftime("%d/%m/%Y"), "Servicos": ", ".join(servs), "Total": total}), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
+            if placa_input:
+                dados_cli = buscar_cliente_por_placa(placa_input)
+                if dados_cli:
+                    st.success(f"Cliente Encontrado: {dados_cli['Cliente']}")
+                    val_cli = dados_cli['Cliente']
+                    val_veic = dados_cli['Veiculo']
+                    val_zap = dados_cli.get("Telefone", "")
+                    
+                    cats_lista = df_cat["Categoria"].tolist() if not df_cat.empty else []
+                    if dados_cli['Categoria'] in cats_lista:
+                        val_cat_idx = cats_lista.index(dados_cli['Categoria'])
+                else:
+                    if len(placa_input) > 5: st.warning("Placa nova. Preencha os dados abaixo.")
 
-    with t2:
+            c1, c2 = st.columns(2)
+            cli = c1.text_input("Nome do Cliente", value=val_cli)
+            zap = c2.text_input("WhatsApp (DDD+Número)", value=val_zap, placeholder="75999998888")
+            
+            c3, c4 = st.columns(2)
+            veic = c3.text_input("Modelo do Veículo", value=val_veic)
+            placa_final = placa_input 
+            dt = c4.date_input("Data", value=date.today(), format="DD/MM/YYYY")
+            hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
+            
+            if "Categoria" in df_cat.columns:
+                cat = st.selectbox("Categoria do Veículo:", df_cat["Categoria"], index=val_cat_idx)
+                servs_disp = [c for c in df_cat.columns if c != "Categoria"]
+                escolhidos = st.multiselect("Selecione os Serviços:", servs_disp)
+                
+                st.divider()
+                ce1, ce2, ce3 = st.columns(3)
+                extra_v = ce1.number_input("Valor Extra (R$)", min_value=0.0)
+                desconto_v = ce2.number_input("Desconto (R$)", min_value=0.0)
+                quem = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
+                
+                if escolhidos:
+                    precos = {s: df_cat[df_cat["Categoria"] == cat][s].values[0] for s in escolhidos}
+                    total = sum(precos.values()) + extra_v - desconto_v
+                    st.markdown(f"<h3 style='text-align:right; color:#39FF14'>Total: {formatar_moeda(total)}</h3>", unsafe_allow_html=True)
+                    
+                    # Botão Agendar
+                    col_btn_ag, col_btn_pdf = st.columns(2)
+                    
+                    if col_btn_ag.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
+                        serv_str = ", ".join(escolhidos)
+                        comissao_prev = total * 0.40 if "Equipe" in quem else 0.0
+                        fundo_prev = total * 0.10
+                        lucro_prev = total - comissao_prev - fundo_prev
+                        
+                        dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Telefone": zap, "Veiculo": veic, "Placa": placa_final, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat, "Status": "Orçamento/Pendente"}
+                        ok, msg = salvar_no_google("Agendamentos", dados)
+                        if ok: 
+                            st.success("Agendado!")
+                            # CORREÇÃO ZAP: LIMPEZA E ENCODING
+                            zap_limpo = limpar_numero(zap)
+                            if zap_limpo:
+                                msg_txt = f"Olá {cli}, agendamento confirmado na JM Detail! \n🚗 {veic} \n📅 {dt.strftime('%d/%m/%Y')} às {hr} \n💰 Total: {formatar_moeda(total)}"
+                                msg_encoded = urllib.parse.quote(msg_txt)
+                                link = f"https://wa.me/55{zap_limpo}?text={msg_encoded}"
+                                st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
+                        else: st.error(msg)
+                    
+                    # --- BOTÃO PDF CORRIGIDO ---
+                    if col_btn_pdf.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
+                        serv_str = ", ".join(escolhidos)
+                        dados_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_final, "Data": dt.strftime("%d/%m/%Y"), "Servicos": serv_str, "Total": total}
+                        pdf_bytes = gerar_pdf_orcamento(dados_pdf)
+                        st.download_button(label="📥 BAIXAR PDF", data=pdf_bytes, file_name=f"Orcamento_{cli}.pdf", mime='application/pdf', use_container_width=True)
+
+            else: st.error("Erro no Catálogo.")
+
+    with tab_list:
         df_a = carregar_dados("Agendamentos")
-        if df_a.empty: st.info("Vazio.")
+        if df_a.empty: st.info("Agenda vazia.")
         else:
             for i, r in df_a.iterrows():
-                st.markdown(f'<div class="agenda-card"><div style="display:flex;justify-content:space-between;"><b>{r["Data"]} {r["Hora"]}</b><b style="color:#39FF14">{formatar_moeda(r["Total"])}</b></div><div style="font-size:18px"><b>{obter_icone_html(r.get("Categoria",""))} {r["Veiculo"]}</b> ({r["Placa"]})</div><div>{r["Cliente"]}</div><div style="color:#888">🔧 {r["Servicos"]}</div></div>', unsafe_allow_html=True)
-                c1, c2, c3 = st.columns([2,1,1])
-                if c1.button("✅ Concluir", key=f"ok_{i}", use_container_width=True):
-                    t = float(r["Total"]); f = t * 0.10; c = t * 0.40 if "Equipe" in r["Executor"] else 0.0
-                    salvar_no_google("Vendas", {"Data": r["Data"], "Cliente": r["Cliente"], "Telefone": r.get("Telefone",""), "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": t, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": c, "Fundo Caixa": f, "Lucro Liquido": t-f-c, "Status Comissao": "Pendente", "Categoria": r.get("Categoria","")})
-                    excluir_agendamento(i); st.rerun()
-                if c2.button("📱", key=f"z_{i}", use_container_width=True):
-                    if r.get("Telefone"):
-                        z_cl = limpar_numero(r["Telefone"])
-                        txt_p = urllib.parse.quote(f"Olá {r['Cliente']}! Seu {r['Veiculo']} já está pronto aqui na JM Detail. ✨ Pode vir buscar!")
-                        st.markdown(f'<meta http-equiv="refresh" content="0; url=https://wa.me/55{z_cl}?text={txt_p}">', unsafe_allow_html=True)
-                if c3.button("🗑️", key=f"d_{i}", use_container_width=True): excluir_agendamento(i); st.rerun()
+                st.markdown(f"""
+                <div class="agenda-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <div style="font-weight:bold; color:#00B4DB; font-size:16px"><i class="bi bi-clock"></i> {r['Data']} {r['Hora']}</div>
+                        <div style="font-weight:800; font-size:18px; color:#39FF14">{formatar_moeda(float(r['Total']))}</div>
+                    </div>
+                    <div style="font-size:18px; font-weight:700; color:white">{obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']} <span style="font-size:14px; color:#888">({r['Placa']})</span></div>
+                    <div style="font-size:14px; color:#ccc"><i class="bi bi-person-fill"></i> {r['Cliente']}</div>
+                    <div style="margin-top:5px; border-top:1px solid #333; padding-top:5px; color:#888">🔧 {r['Servicos']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                c_btn1, c_btn2, c_btn3 = st.columns([2, 1, 1])
+                with c_btn1:
+                    if st.button(f"✅ Concluir", key=f"ok_{i}", use_container_width=True):
+                        t = float(r["Total"]); f = t * 0.10; c = t * 0.40 if "Equipe" in r["Executor"] else 0.0
+                        venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Telefone": r.get("Telefone", ""), "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": t, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": c, "Fundo Caixa": f, "Lucro Liquido": t-f-c, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
+                        salvar_no_google("Vendas", venda); excluir_agendamento(i); st.rerun()
+                with c_btn2:
+                    # CORREÇÃO DO LINK DE ZAP (CARRO PRONTO)
+                    zap_cliente = str(r.get("Telefone", ""))
+                    zap_limpo = limpar_numero(zap_cliente)
+                    if zap_limpo:
+                        msg_txt = f"Olá {r['Cliente']}! Seu {r['Veiculo']} já está pronto aqui na JM Detail. ✨ Ficou top! Valor Total: {formatar_moeda(float(r['Total']))}. Pode vir buscar!"
+                        msg_encoded = urllib.parse.quote(msg_txt)
+                        link = f"https://wa.me/55{zap_limpo}?text={msg_encoded}"
+                        st.markdown(f'<a href="{link}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
+
+                with c_btn3:
+                    if st.button(f"🗑️", key=f"del_{i}", use_container_width=True):
+                        excluir_agendamento(i); st.rerun()
+
+def page_despesas():
+    st.markdown('## <i class="bi bi-receipt" style="color: #D90429;"></i> Despesas', unsafe_allow_html=True)
+    with st.form("form_desp"):
+        desc = st.text_input("Descrição")
+        val = st.number_input("Valor", min_value=0.0)
+        if st.form_submit_button("Lançar"):
+            salvar_no_google("Despesas", {"Data": datetime.now().strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val})
+            st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico')
+    st.markdown('## <i class="bi bi-clock-history" style="color: #FFC107;"></i> Garagem & Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
-    if not df.empty:
-        busca = st.text_input("🔍 Buscar...").lower()
-        df_f = df.iloc[::-1]
-        if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
-        for _, r in df_f.iterrows():
-            st.markdown(f'<div class="history-card" style="border-left:5px solid #28a745"><div style="display:flex;justify-content:space-between;"><div><b>{r["Carro"]}</b><br>{r["Cliente"]} | {r["Placa"]}</div><div style="text-align:right"><b style="color:#39FF14">{formatar_moeda(r["Total"])}</b><br><small>{r["Data"]}</small></div></div><div style="color:#888">{r["Serviços"]}</div></div>', unsafe_allow_html=True)
+    if df.empty: st.info("Vazio."); return
+    busca = st.text_input("🔍 Buscar Cliente ou Carro...").strip().lower()
+    df_f = df.iloc[::-1]
+    if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
 
-if menu_selecionado == "DASHBOARD": page_dashboard()
-elif menu_selecionado == "AGENDA": page_agendamento()
-elif menu_selecionado == "HISTÓRICO": page_historico()
-elif menu_selecionado == "FINANCEIRO": st.info("Página Financeiro")
-elif menu_selecionado == "DESPESAS": st.info("Página Despesas")
+    for index, r in df_f.iterrows():
+        st.markdown(f"""
+        <div class="history-card" style="border-left: 5px solid #28a745">
+            <div style="display: flex; justify-content: space-between;">
+                <div><h3 style="margin:0;color:white">{obter_icone_html(r.get("Categoria", ""))} {r["Carro"]}</h3><p style="margin:0;color:#bbb">{r["Cliente"]} | {r["Placa"]}</p></div>
+                <div style="text-align:right"><h2 style="margin:0;color:#39FF14">{formatar_moeda(float(r["Total"]))}</h2><span style="background:#222;padding:4px;border-radius:6px;font-size:11px">{r["Data"]}</span></div>
+            </div>
+            <div style="margin-top:10px;border-top:1px solid #333;color:#888">{r["Serviços"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-st.markdown('<div class="footer">JM Detail System © 2026 | Desenvolvido por Jairan Jesus Matos</div>', unsafe_allow_html=True)
+if "DASHBOARD" in menu_selecionado: page_dashboard()
+elif "AGENDA" in menu_selecionado: page_agendamento()
+elif "FINANCEIRO" in menu_selecionado: page_financeiro()
+elif "DESPESAS" in menu_selecionado: page_despesas()
+elif "HISTÓRICO" in menu_selecionado: page_historico()
+
+st.markdown('<div class="footer">Desenvolvido por <b>Jairan Jesus Matos</b> | JM Detail System © 2026</div>', unsafe_allow_html=True)
