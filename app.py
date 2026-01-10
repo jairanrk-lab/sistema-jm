@@ -66,7 +66,6 @@ st.markdown("""
         font-size: 16px !important; white-space: nowrap !important; display: flex;
         align-items: center; justify-content: center !important;
     }
-    /* Ícones do Menu */
     div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 18px; }
@@ -76,7 +75,6 @@ st.markdown("""
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: #1a1a1a !important; transform: translateY(-2px); }
     div[role="radiogroup"] label[data-checked="true"] { background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important; color: white !important; border-color: #D90429 !important; box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important; }
     
-    /* CARDS */
     .dash-card { border-radius: 15px; padding: 20px; color: white; margin-bottom: 20px; border: 1px solid #333; position: relative; overflow: hidden; height: 140px !important; display: flex; flex-direction: column; justify-content: center; }
     .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.15 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
     .bg-orange { background: linear-gradient(145deg, #FF9800, #F57C00); }
@@ -100,22 +98,18 @@ def conectar_google_sheets():
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     
     try:
-        # Tenta pegar dos secrets ou usa o fixo
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
             ID_FIXO = st.secrets["app"]["spreadsheet_id"]
             
-        # Tenta autenticar (AQUI GERALMENTE É O ERRO)
         if os.path.exists("chave_google.json"): 
             client = gspread.service_account(filename="chave_google.json")
         elif "gcp_service_account" in st.secrets:
             client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
         else:
-            st.error("🚨 ERRO CRÍTICO: Não encontrei as credenciais (chave_google.json ou Secrets). O sistema não consegue entrar no Google.")
+            st.error("🚨 ERRO CRÍTICO: Não encontrei as credenciais.")
             return None
 
-        # Tenta abrir a planilha
-        sh = client.open_by_key(ID_FIXO)
-        return sh
+        return client.open_by_key(ID_FIXO)
         
     except Exception as e:
         st.error(f"🚨 ERRO DE CONEXÃO: {e}")
@@ -127,7 +121,7 @@ def carregar_dados(aba):
     try: 
         return pd.DataFrame(sheet.worksheet(aba).get_all_records())
     except gspread.WorksheetNotFound:
-        st.error(f"🚨 ERRO: A aba '{aba}' não foi encontrada na planilha. Verifique o nome (maiúsculas/minúsculas).")
+        st.error(f"🚨 ERRO: A aba '{aba}' não foi encontrada.")
         return pd.DataFrame()
     except Exception as e:
         st.error(f"🚨 Erro ao ler aba '{aba}': {e}")
@@ -172,7 +166,6 @@ def carregar_catalogo():
                 return df
     except: pass
     
-    # Backup
     return pd.DataFrame({
         "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
@@ -194,49 +187,38 @@ def obter_icone_html(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
     else: return '<i class="bi bi-car-front-fill"></i>'
 
-# --- FUNÇÃO DE BUSCA DE CLIENTE (AUTO-COMPLETE) ---
+# --- FUNÇÃO DE BUSCA ---
 def buscar_cliente_por_placa(placa_busca):
-    # Procura nas abas de Agendamentos e Vendas
     df_a = carregar_dados("Agendamentos")
     df_v = carregar_dados("Vendas")
-    
-    # Concatena para ter histórico completo
     df_completo = pd.concat([df_a, df_v], ignore_index=True)
-    
     if df_completo.empty: return None
-    
-    # Limpa a placa para comparar (sem traço, maiusculo)
     placa_busca = placa_busca.replace("-", "").strip().upper()
-    
-    # Filtra
     if "Placa" in df_completo.columns:
         df_completo['Placa'] = df_completo['Placa'].astype(str)
         res = df_completo[df_completo['Placa'].str.replace("-", "").str.strip().str.upper() == placa_busca]
-        
         if not res.empty:
-            # Pega o último registro (mais recente)
             ultimo = res.iloc[-1]
-            return {
-                "Cliente": ultimo.get("Cliente", ""),
-                "Telefone": str(ultimo.get("Telefone", "")),
-                "Veiculo": ultimo.get("Veiculo", "") if "Veiculo" in ultimo else ultimo.get("Carro", ""),
-                "Categoria": ultimo.get("Categoria", "")
-            }
+            return {"Cliente": ultimo.get("Cliente", ""), "Telefone": str(ultimo.get("Telefone", "")), "Veiculo": ultimo.get("Veiculo", "") if "Veiculo" in ultimo else ultimo.get("Carro", ""), "Categoria": ultimo.get("Categoria", "")}
     return None
 
+# --- GERADOR PDF PREMIUM (COM DETALHAMENTO DE PREÇOS E ASSINATURA) ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
     
+    # 1. LOGO AUMENTADA
     logo_file = None
     if os.path.exists("logo.png"): logo_file = "logo.png"
     elif os.path.exists("Logo.png"): logo_file = "Logo.png"
     elif os.path.exists("LOGO.png"): logo_file = "LOGO.png"
     
-    if logo_file: pdf.image(logo_file, x=10, y=8, w=30)
+    if logo_file: pdf.image(logo_file, x=10, y=8, w=50) # Aumentado de 30 para 50
+    else: pdf.ln(10)
     
     def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
 
+    pdf.set_y(25) # Ajuste para não bater na logo maior
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
     pdf.set_font("Arial", size=10)
@@ -249,22 +231,38 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 10, txt(f"DATA: {dados['Data']}"), ln=True)
     pdf.ln(5)
     
+    # Cabeçalho Tabela
     pdf.set_fill_color(220, 220, 220)
     pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1)
     pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
     
+    # Itens Detalhados (Agora com Preço!)
     pdf.set_font("Arial", size=12)
-    servicos = dados['Servicos'].split(',')
-    # Adiciona serviços principais
-    for s in servicos:
-        if s.strip():
-            pdf.cell(140, 10, txt(s.strip()), 1)
-            pdf.cell(50, 10, "-", 1, 1, 'C') 
+    
+    for item in dados['Itens']:
+        pdf.cell(140, 10, txt(item['desc']), 1)
+        pdf.cell(50, 10, txt(f"R$ {item['val']:.2f}"), 1, 1, 'C')
             
     pdf.ln(5)
     pdf.set_font("Arial", "B", 14)
     pdf.cell(140, 10, "TOTAL ESTIMADO", 1, 0, 'R')
     pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
+    
+    # --- ASSINATURA DIGITAL ---
+    pdf.ln(25) # Espaço
+    
+    sig_file = None
+    if os.path.exists("assinatura.png"): sig_file = "assinatura.png"
+    elif os.path.exists("Assinatura.png"): sig_file = "Assinatura.png"
+    
+    # Se achar assinatura, coloca imagem centralizada
+    if sig_file:
+        x_centered = (210 - 50) / 2
+        pdf.image(sig_file, x=x_centered, y=pdf.get_y() - 15, w=50)
+    
+    pdf.cell(0, 10, "___________________________________________________", ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 5, txt("Jairan Jesus Matos - Responsável Técnico"), ln=True, align='C')
     
     return pdf.output(dest="S").encode("latin-1")
 
@@ -320,7 +318,7 @@ def page_dashboard():
     
     lucro_final = lucro_operacional - despesa_mes
     
-    # --- BARRA DE META (Compacta) ---
+    # --- BARRA DE META ---
     META_MENSAL = 5000.00 
     if META_MENSAL > 0:
         pct_real = (receita_mes / META_MENSAL) * 100
@@ -350,7 +348,6 @@ def page_dashboard():
 
     st.write("---")
     
-    # Gráfico
     if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance', unsafe_allow_html=True)
         base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
@@ -397,38 +394,28 @@ def page_agendamento():
     
     with tab_new:
         with st.container(border=True):
-            # --- AUTO PREENCHIMENTO PELA PLACA ---
             c_placa, c_buscar = st.columns([3, 1])
             placa_input = c_placa.text_input("Digite a Placa para Buscar Cadastro (ou Nova Placa)", key="placa_input")
-            
-            # Variáveis de preenchimento (padrão vazio)
             val_cli, val_veic, val_zap, val_cat_idx = "", "", "", 0
             
-            # Se clicar em buscar ou der Enter na placa (Streamlit rerun)
             if placa_input:
                 dados_cli = buscar_cliente_por_placa(placa_input)
                 if dados_cli:
                     st.success(f"Cliente Encontrado: {dados_cli['Cliente']}")
                     val_cli = dados_cli['Cliente']
                     val_veic = dados_cli['Veiculo']
-                    val_zap = dados_cli.get("Telefone", "") # Preenche se tiver na planilha
-                    
-                    # Tenta achar o índice da categoria
+                    val_zap = dados_cli.get("Telefone", "")
                     cats_lista = df_cat["Categoria"].tolist() if not df_cat.empty else []
-                    if dados_cli['Categoria'] in cats_lista:
-                        val_cat_idx = cats_lista.index(dados_cli['Categoria'])
+                    if dados_cli['Categoria'] in cats_lista: val_cat_idx = cats_lista.index(dados_cli['Categoria'])
                 else:
-                    if len(placa_input) > 5: st.warning("Placa nova. Preencha os dados abaixo.")
+                    if len(placa_input) > 5: st.warning("Placa nova.")
 
             c1, c2 = st.columns(2)
             cli = c1.text_input("Nome do Cliente", value=val_cli)
             zap = c2.text_input("WhatsApp (DDD+Número)", value=val_zap, placeholder="75999998888")
-            
             c3, c4 = st.columns(2)
             veic = c3.text_input("Modelo do Veículo", value=val_veic)
-            # A placa final é a do input
             placa_final = placa_input 
-            
             dt = c4.date_input("Data", value=date.today(), format="DD/MM/YYYY")
             hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
@@ -436,7 +423,6 @@ def page_agendamento():
                 cat = st.selectbox("Categoria do Veículo:", df_cat["Categoria"], index=val_cat_idx)
                 servs_disp = [c for c in df_cat.columns if c != "Categoria"]
                 escolhidos = st.multiselect("Selecione os Serviços:", servs_disp)
-                
                 st.divider()
                 ce1, ce2, ce3 = st.columns(3)
                 extra_v = ce1.number_input("Valor Extra (R$)", min_value=0.0)
@@ -444,11 +430,20 @@ def page_agendamento():
                 quem = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
                 
                 if escolhidos:
-                    precos = {s: df_cat[df_cat["Categoria"] == cat][s].values[0] for s in escolhidos}
-                    total = sum(precos.values()) + extra_v - desconto_v
+                    # LÓGICA DE DETALHAMENTO DE PREÇOS PARA PDF
+                    itens_pdf = []
+                    total = 0.0
+                    for s in escolhidos:
+                        val = float(df_cat[df_cat["Categoria"] == cat][s].values[0])
+                        total += val
+                        itens_pdf.append({"desc": s, "val": val})
+                    
+                    total = total + extra_v - desconto_v
+                    if extra_v > 0: itens_pdf.append({"desc": "Valor Extra", "val": extra_v})
+                    if desconto_v > 0: itens_pdf.append({"desc": "Desconto", "val": -desconto_v})
+
                     st.markdown(f"<h3 style='text-align:right; color:#39FF14'>Total: {formatar_moeda(total)}</h3>", unsafe_allow_html=True)
                     
-                    # Botão Agendar
                     col_btn_ag, col_btn_pdf = st.columns(2)
                     
                     if col_btn_ag.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
@@ -456,7 +451,6 @@ def page_agendamento():
                         comissao_prev = total * 0.40 if "Equipe" in quem else 0.0
                         fundo_prev = total * 0.10
                         lucro_prev = total - comissao_prev - fundo_prev
-                        
                         dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Telefone": zap, "Veiculo": veic, "Placa": placa_final, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat}
                         ok, msg = salvar_no_google("Agendamentos", dados)
                         if ok: 
@@ -467,13 +461,11 @@ def page_agendamento():
                                 st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                         else: st.error(msg)
                     
-                    # --- BOTÃO PDF (AGORA EXISTE) ---
+                    # --- BOTÃO PDF NOVO ---
                     if col_btn_pdf.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
-                        serv_str = ", ".join(escolhidos)
-                        dados_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_final, "Data": dt.strftime("%d/%m/%Y"), "Servicos": serv_str, "Total": total}
+                        dados_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_final, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_pdf, "Total": total}
                         pdf_bytes = gerar_pdf_orcamento(dados_pdf)
                         st.download_button(label="📥 BAIXAR PDF", data=pdf_bytes, file_name=f"Orcamento_{cli}.pdf", mime='application/pdf', use_container_width=True)
-
             else: st.error("Erro no Catálogo.")
 
     with tab_list:
@@ -505,14 +497,12 @@ def page_agendamento():
                         excluir_agendamento(i)
                         st.rerun()
                 with c_btn2:
-                    # --- BOTÃO WHATSAPP CARRO PRONTO ---
                     if r.get("Telefone"):
                         msg_pronto = f"Olá {r['Cliente']}! Seu {r['Veiculo']} já está pronto aqui na JM Detail. ✨ Ficou top! Valor Total: {formatar_moeda(float(r['Total']))}. Pode vir buscar!"
                         link_pronto = f"https://wa.me/55{r['Telefone']}?text={msg_pronto}"
                         st.markdown(f'<a href="{link_pronto}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
                     else:
                         st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
-
                 with c_btn3:
                     if st.button(f"🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i); st.rerun()
