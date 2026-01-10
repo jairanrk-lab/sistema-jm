@@ -13,11 +13,19 @@ import urllib.parse
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
-# --- 2. SISTEMA DE LOGIN ---
+# --- 2. SISTEMA DE LOGIN PERSISTENTE ---
 # ==============================================================================
 def check_password():
+    # Verifica se já está logado na sessão ou pela URL (truque para persistir no F5)
     if st.session_state.get("password_correct", False):
         return True
+    
+    # Se tiver o parâmetro "logado=true" na URL, libera o acesso
+    if st.query_params.get("logado") == "true":
+        st.session_state["password_correct"] = True
+        return True
+
+    # Tenta liberar acesso mestre antigo (compatibilidade)
     try:
         if st.query_params.get("acesso_liberado") == "sim_mestre":
             return True
@@ -33,8 +41,11 @@ def check_password():
             if submit:
                 try: senha_correta = st.secrets["app"]["password"]
                 except: senha_correta = "1234"
+                
                 if pwd == senha_correta: 
                     st.session_state["password_correct"] = True
+                    # Adiciona parâmetro na URL para manter logado ao atualizar
+                    st.query_params["logado"] = "true"
                     st.rerun()
                 else: st.error("Senha incorreta.")
     return False
@@ -476,7 +487,7 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico')
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # CORREÇÃO: ADICIONEI unsafe_allow_html=True para o ícone
     df = carregar_dados("Vendas")
     if not df.empty:
         busca = st.text_input("🔍 Buscar...").strip().lower()
