@@ -90,11 +90,33 @@ st.markdown("""
     }
 
     /* --- INJEÇÃO DOS ÍCONES BOOTSTRAP (O SEGREDO) --- */
-    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 8px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 8px; font-size: 16px; }
+    /* Cada linha abaixo coloca um ícone específico antes do texto do botão */
+    
+    /* 1. Dashboard -> Speedometer */
+    div[role="radiogroup"] label:nth-of-type(1)::before {
+        font-family: "bootstrap-icons"; content: "\\F5A6"; 
+        margin-right: 8px; font-size: 16px;
+    }
+    /* 2. Agenda -> Calendar Check */
+    div[role="radiogroup"] label:nth-of-type(2)::before {
+        font-family: "bootstrap-icons"; content: "\\F20E"; 
+        margin-right: 8px; font-size: 16px;
+    }
+    /* 3. Financeiro -> Cash Coin */
+    div[role="radiogroup"] label:nth-of-type(3)::before {
+        font-family: "bootstrap-icons"; content: "\\F23E"; 
+        margin-right: 8px; font-size: 16px;
+    }
+    /* 4. Despesas -> Receipt */
+    div[role="radiogroup"] label:nth-of-type(4)::before {
+        font-family: "bootstrap-icons"; content: "\\F4E9"; 
+        margin-right: 8px; font-size: 16px;
+    }
+    /* 5. Histórico -> Clock History */
+    div[role="radiogroup"] label:nth-of-type(5)::before {
+        font-family: "bootstrap-icons"; content: "\\F291"; 
+        margin-right: 8px; font-size: 16px;
+    }
 
     /* Hover */
     div[role="radiogroup"] label:hover {
@@ -218,6 +240,27 @@ def obter_icone_html(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
     else: return '<i class="bi bi-car-front-fill"></i>'
 
+def gerar_pdf(cliente, carro, placa, data_servico, servicos_com_precos, total):
+    pdf = FPDF()
+    pdf.add_page()
+    if os.path.exists("logo.png"): pdf.image("logo.png", x=55, y=10, w=100); pdf.ln(35)
+    else: pdf.ln(20)
+    def txt(t): return t.encode('latin-1', 'replace').decode('latin-1')
+    pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt=txt("JM DETAIL - Estética Automotiva Premium"), ln=True, align='C')
+    pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt=txt("Tucano - BA | Rua São João, 54 | (75) 99830-3753"), ln=True, align='C')
+    pdf.ln(10); pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt=txt(f"CLIENTE: {cliente}"), ln=True)
+    pdf.cell(0, 10, txt=txt(f"VEÍCULO: {carro} | PLACA: {placa}"), ln=True)
+    pdf.cell(0, 10, txt=txt(f"DATA: {data_servico}"), ln=True); pdf.ln(5)
+    pdf.set_fill_color(240, 240, 240); pdf.cell(140, 10, txt("Pacote de Serviços"), border=1, fill=True)
+    pdf.cell(50, 10, txt="Valor", border=1, ln=True, fill=True, align='C'); pdf.set_font("Arial", size=12)
+    for s, v in servicos_com_precos.items():
+        t_s = (s[:60] + '...') if len(s) > 60 else s
+        pdf.cell(140, 10, txt=txt(t_s), border=1); pdf.cell(50, 10, txt=txt(f"R$ {v:.2f}"), border=1, ln=True, align='C')
+    pdf.ln(5); pdf.set_font("Arial", "B", 14); pdf.cell(140, 10, txt="TOTAL", align='R')
+    pdf.cell(50, 10, txt=txt(f"R$ {total:.2f}"), border=1, align='C')
+    return pdf.output(dest="S").encode("latin-1")
+
 # ==============================================================================
 # --- CABEÇALHO E NAVEGAÇÃO SUPERIOR ---
 # ==============================================================================
@@ -229,7 +272,7 @@ with c_logo2:
 
 st.write("") 
 
-# MENU DE NAVEGAÇÃO
+# MENU DE NAVEGAÇÃO (Texto Limpo - Ícones vêm via CSS, como você pediu)
 menu_opcoes = ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
 menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 
@@ -241,6 +284,7 @@ def page_dashboard():
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     
+    # Título com Ícone Original
     st.markdown(f'## <i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel Geral <small style="font-size:14px; color:#888">| {nome_meses[mes_atual]}/{ano_atual}</small>', unsafe_allow_html=True)
     
     df_v = carregar_dados("Vendas")
@@ -248,55 +292,38 @@ def page_dashboard():
     df_a = carregar_dados("Agendamentos")
     
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
-    lucro_operacional_mes = 0.0 # Lucro líquido das vendas (já sem os 40% do irmão)
     
     if not df_v.empty:
-        # Tratamento rigoroso de números
         for c in ["Total", "Lucro Liquido"]:
-            if c in df_v.columns:
-                df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
-        
+            df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], format='%d/%m/%Y', errors='coerce')
-        # Filtro de Mês
         df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
-        
-        # Somas
-        vendas_concluidas = df_mes[df_mes["Status"]=="Concluído"]
-        receita_mes = vendas_concluidas["Total"].sum()
-        
-        # AQUI ESTAVA O ERRO: Agora somamos o Lucro Liquido Real da planilha, não calculamos de novo
-        if "Lucro Liquido" in vendas_concluidas.columns:
-            lucro_operacional_mes = vendas_concluidas["Lucro Liquido"].sum()
-        else:
-            lucro_operacional_mes = 0.0
-            
+        receita_mes = df_mes[df_mes["Status"]=="Concluído"]["Total"].sum()
         pendente_total = df_v[df_v["Status"]=="Orçamento/Pendente"]["Total"].sum()
         count_p = len(df_v[df_v["Status"]=="Orçamento/Pendente"])
 
     if not df_d.empty:
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], format='%d/%m/%Y', errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
-        despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
+        despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
     
-    # CÁLCULO FINAL DA VERDADE:
-    # Lucro Real = (Soma do Lucro Liquido dos Serviços) - (Contas de Luz/Água/Produtos)
-    lucro_final = lucro_operacional_mes - despesa_mes
+    lucro_final = receita_mes - despesa_mes
     
     c1, c2 = st.columns(2)
     with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
-    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO BRUTO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Total que entrou na máquina</small></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
     
     c3, c4 = st.columns(2)
-    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS LOJA</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos lançados</small></div>', unsafe_allow_html=True)
-    
+    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
     cor_lucro = "bg-green" if lucro_final >= 0 else "bg-red"
-    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO REAL (SEU)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>Já tirando comissões e despesas</small></div>', unsafe_allow_html=True)
+    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>Após comissões/insumos</small></div>', unsafe_allow_html=True)
 
     st.write("---")
     
     col_graf, col_prox = st.columns([2, 1])
     
     with col_graf:
+        # Título com o ícone Verde Neon (Pedido V13)
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
             base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
@@ -305,9 +332,11 @@ def page_dashboard():
                 color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None),
                 tooltip=['Data', 'Cliente', 'Carro', 'Total', 'Lucro Liquido']
             )
-            st.altair_chart(bars.properties(height=300, background='transparent'), use_container_width=True)
+            line = base.mark_line(color='#0575E6', strokeWidth=3).encode(y=alt.Y('Lucro Liquido', axis=None))
+            chart = alt.layer(bars, line).properties(height=300, background='transparent').configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
+            st.altair_chart(chart, use_container_width=True)
         else:
-            st.info("Sem dados de vendas este mês.")
+            st.info("Sem dados de vendas neste mês.")
             
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown('##### <i class="bi bi-bullseye" style="color:#D90429"></i> Meta Mensal', unsafe_allow_html=True)
@@ -354,10 +383,10 @@ def page_financeiro():
     st.info(f"Caixa da Empresa (Acumulado): {formatar_moeda(fundo_caixa)}")
     
     col1, col2 = st.columns([2,1])
-    with col1: st.metric("Comissões Pendentes (Total)", formatar_moeda(comissao_pendente))
+    with col1: st.metric("Comissões Pendentes", formatar_moeda(comissao_pendente))
     with col2:
         if comissao_pendente > 0:
-            if st.button("Pagar Todas Comissões"):
+            if st.button("Pagar Comissões"):
                 sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
                 header = ws.row_values(1); col_idx = header.index("Status Comissao") + 1
                 for i, linha in enumerate(dados):
@@ -397,11 +426,7 @@ def page_agendamento():
                 
                 if st.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
                     serv_str = ", ".join(escolhidos)
-                    # Cálculo de PREVISÃO (Mesma regra do final)
-                    comissao = total * 0.40 if "Equipe" in quem else 0.0
-                    fundo = total * 0.10
-                    lucro = total - fundo - comissao
-                    
+                    lucro = total - (total * 0.10) - (total * 0.40 if "Equipe" in quem else 0)
                     dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro, "Categoria": cat}
                     ok, msg = salvar_no_google("Agendamentos", dados)
                     if ok: st.success("Agendado!"); t_sleep.sleep(1); st.rerun()
@@ -437,17 +462,10 @@ def page_agendamento():
                 c_btn1, c_btn2 = st.columns(2)
                 with c_btn1:
                     if st.button(f"✅ Concluir Serviço", key=f"ok_{i}", use_container_width=True):
-                        # --- AQUI ESTÁ A LÓGICA QUE VOCÊ PEDIU (40% SOBRE O BRUTO) ---
-                        valor_bruto = float(r["Total"])
-                        
-                        fundo = valor_bruto * 0.10
-                        # Se for equipe, 40% em cima do valor CHEIO (Bruto)
-                        comis = valor_bruto * 0.40 if "Equipe" in r["Executor"] else 0.0
-                        
-                        # Seu lucro é o que sobra
-                        lucro = valor_bruto - fundo - comis
-                        
-                        venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": valor_bruto, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": comis, "Fundo Caixa": fundo, "Lucro Liquido": lucro, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
+                        fundo = float(r["Total"]) * 0.10
+                        comis = float(r["Total"]) * 0.40 if "Equipe" in r["Executor"] else 0.0
+                        lucro = float(r["Total"]) - fundo - comis
+                        venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": r["Total"], "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": comis, "Fundo Caixa": fundo, "Lucro Liquido": lucro, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
                         salvar_no_google("Vendas", venda)
                         excluir_agendamento(i)
                         st.rerun()
