@@ -168,7 +168,6 @@ def carregar_catalogo():
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
-    
     return pd.DataFrame({
         "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
@@ -337,7 +336,6 @@ def page_dashboard():
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
-            # --- ATUALIZAÇÃO DO GRÁFICO (SUGESTÃO DO OUTRO MENTOR) ---
             base = alt.Chart(df_mes).encode(x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m')))
             bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(y=alt.Y('Total:Q', title=None), color=alt.value('#39FF14'), tooltip=['Data', 'Cliente', 'Carro', alt.Tooltip('Total:Q', format=',.2f')])
             linha = base.mark_line(strokeWidth=3, color='#00B4DB', point=alt.OverlayMarkDef(filled=True, size=80)).encode(y='Total:Q')
@@ -349,38 +347,67 @@ def page_dashboard():
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
         # Espaço para futuros agendamentos
 
+# --- FINANCEIRO 2.0 (ATUALIZADO) ---
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
     df_v = carregar_dados("Vendas")
-    comissao_pendente = 0.0; fundo_caixa = 0.0
+    
+    comissao_pendente = 0.0; fundo_caixa = 0.0; lucro_liquido = 0.0
+    df_pendente = pd.DataFrame()
+
     if not df_v.empty:
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-        if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
-        for c in ["Total", "Valor comissao", "Fundo caixa"]:
+        
+        # Limpa e converte números
+        for c in ["Total", "Valor comissao", "Fundo caixa", "Lucro liquido"]:
             if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
         
-        df_pendente = df_v[df_v["Status comissao"] != "Pago"]
-        for index, row in df_pendente.iterrows():
-             if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
-                 comissao_pendente += (row["Total"] * 0.40)
+        # Filtra o que está pendente de pagamento
+        if "Status comissao" in df_v.columns:
+            df_pendente = df_v[df_v["Status comissao"] != "Pago"].copy()
+            
+            # Calcula Comissões
+            for index, row in df_pendente.iterrows():
+                # Se for Equipe ou tiver valor na comissão
+                if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
+                    comissao_pendente += (row["Total"] * 0.40)
+        
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
+        if "Lucro liquido" in df_v.columns: lucro_liquido = df_v["Lucro liquido"].sum()
+
+    # --- CARDS VISUAIS ---
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liquido)}</div><small>Já descontado tudo</small></div>', unsafe_allow_html=True)
+
+    st.write("---")
     
-    st.info(f"Caixa da Empresa (Acumulado): {formatar_moeda(fundo_caixa)}")
-    col1, col2 = st.columns([2,1])
-    with col1: st.metric("Comissões Pendentes (40%)", formatar_moeda(comissao_pendente))
-    with col2:
-        if comissao_pendente > 0:
-            if st.button("Pagar Comissões"):
-                sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
-                header = ws.row_values(1)
-                col_idx = -1
-                for idx, h in enumerate(header):
-                    if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
-                if col_idx > 0:
-                    for i, linha in enumerate(dados):
-                        v = converter_valor(linha.get("Valor Comissao", "0"))
-                        if v > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
-                    st.success("Pago!"); t_sleep.sleep(1); st.rerun()
+    # --- TABELA DE EXTRATO ---
+    st.markdown("### 📋 Detalhe do que falta pagar")
+    if not df_pendente.empty:
+        # Mostra apenas colunas úteis
+        cols_uteis = [c for c in ["Data", "Cliente", "Carro", "Placa", "Total", "Valor comissao"] if c in df_pendente.columns]
+        st.dataframe(df_pendente[cols_uteis], use_container_width=True)
+        
+        st.write("")
+        if st.button("✅ Pagar Comissões e Baixar"):
+            sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
+            header = ws.row_values(1)
+            col_idx = -1
+            for idx, h in enumerate(header):
+                if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
+            
+            if col_idx > 0:
+                count = 0
+                for i, linha in enumerate(dados):
+                    v = converter_valor(linha.get("Valor Comissao", "0"))
+                    if v > 0 and str(linha.get("Status Comissao", "")) != "Pago":
+                        ws.update_cell(i + 2, col_idx, "Pago")
+                        count += 1
+                st.success(f"{count} comissões pagas com sucesso!"); t_sleep.sleep(2); st.rerun()
+    else:
+        st.info("Nenhuma comissão pendente.")
 
 def page_agendamento():
     st.markdown('## <i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada', unsafe_allow_html=True)
@@ -397,9 +424,7 @@ def page_agendamento():
                 dados_cli = buscar_cliente_por_placa(placa_input)
                 if dados_cli:
                     st.success(f"Cliente Encontrado: {dados_cli['Cliente']}")
-                    val_cli = dados_cli['Cliente']
-                    val_veic = dados_cli['Veiculo']
-                    val_zap = dados_cli.get("Telefone", "")
+                    val_cli = dados_cli['Cliente']; val_veic = dados_cli['Veiculo']; val_zap = dados_cli['Telefone']
                     cats_lista = df_cat["Categoria"].tolist() if not df_cat.empty else []
                     if dados_cli['Categoria'] in cats_lista: val_cat_idx = cats_lista.index(dados_cli['Categoria'])
                 else:
