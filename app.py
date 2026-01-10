@@ -61,7 +61,7 @@ def check_password():
                     st.session_state["login_time"] = datetime.now().isoformat()
                     
                     # Registrar log de login
-                    registrar_log("Sistema", "Login realizado", f"IP: {st.experimental_user.ip}")
+                    registrar_log("Sistema", "Login realizado")
                     
                     try:
                         st.query_params["acesso_liberado"] = "sim_mestre"
@@ -71,7 +71,6 @@ def check_password():
                     st.rerun()
                 else:
                     st.error("Senha incorreta.")
-                    registrar_log("Tentativa falha", "Login falhou", f"Tentativa com senha: {pwd[:3]}...")
     
     return False
 
@@ -79,7 +78,7 @@ if not check_password():
     st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS OTIMIZADO (V14.0) ---
+# --- 3. ESTILO CSS OTIMIZADO (V14.1) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -236,27 +235,56 @@ st.markdown("""
     .bg-purple { background: linear-gradient(145deg, #8E2DE2, #4A00E0); }
     .bg-dark { background: linear-gradient(145deg, #222, #111); }
 
-    /* --- CARDS LISTA --- */
-    .agenda-card { 
-        background-color: #161616 !important; 
-        border-radius: 12px; 
-        padding: 15px; 
-        margin-bottom: 12px; 
-        border: 1px solid #333; 
-        border-left: 5px solid #00B4DB; 
-        transition: all 0.3s ease;
-    }
-    
-    .agenda-card:hover {
-        border-left-width: 8px;
-    }
-    
+    /* --- CARDS HISTÓRICO CORRIGIDOS --- */
     .history-card { 
         background-color: #161616 !important; 
         border-radius: 12px; 
-        padding: 15px; 
-        margin-bottom: 12px; 
+        padding: 20px; 
+        margin-bottom: 20px; 
         border: 1px solid #333; 
+        border-left: 5px solid #28a745;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    
+    .history-card h3 {
+        color: white !important;
+        margin: 0 0 10px 0 !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+    }
+    
+    .history-card p {
+        color: #bbb !important;
+        margin: 5px 0 !important;
+        font-size: 14px !important;
+    }
+    
+    .history-card .valor-total {
+        color: #39FF14 !important;
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+    
+    .history-card .servicos {
+        color: #888 !important;
+        font-size: 13px !important;
+        margin-top: 12px !important;
+        padding-top: 10px !important;
+        border-top: 1px solid #333 !important;
+    }
+    
+    .history-card .detalhes-financeiros {
+        color: #666 !important;
+        font-size: 12px !important;
+        margin-top: 10px !important;
+        display: flex !important;
+        gap: 15px !important;
+    }
+    
+    .history-card .info-adicional {
+        color: #555 !important;
+        font-size: 11px !important;
+        margin-top: 10px !important;
     }
 
     /* RODAPÉ */
@@ -296,15 +324,6 @@ st.markdown("""
         border: 1px solid #D90429 !important;
     }
     
-    /* KPI Cards */
-    .kpi-card {
-        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-        border-radius: 12px;
-        padding: 15px;
-        border-left: 4px solid;
-        margin-bottom: 10px;
-    }
-    
     /* Responsividade Mobile */
     @media (max-width: 768px) {
         div[role="radiogroup"] {
@@ -328,36 +347,11 @@ st.markdown("""
             margin-top: 30px;
         }
     }
-    
-    /* Scrollbar personalizada */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #111;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: #D90429;
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: #8D021F;
-    }
-    
-    /* Loading spinner */
-    .stSpinner > div {
-        border-color: #D90429 !important;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# --- 4. FUNÇÕES AUXILIARES OTIMIZADAS ---
+# --- 4. FUNÇÕES AUXILIARES CORRIGIDAS ---
 # ==============================================================================
 
 def formatar_moeda(valor: float) -> str:
@@ -366,7 +360,16 @@ def formatar_moeda(valor: float) -> str:
         if pd.isna(valor) or valor is None:
             return "R$ 0,00"
         valor = float(valor)
-        return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        # Formato brasileiro seguro
+        valor_str = f"{valor:,.2f}"
+        # Substituir . por , e , por .
+        partes = valor_str.split('.')
+        if len(partes) == 2:
+            inteiro = partes[0].replace(',', '.')
+            decimal = partes[1]
+            return f"R$ {inteiro},{decimal}"
+        else:
+            return f"R$ {valor_str.replace(',', '.')},00"
     except (ValueError, TypeError):
         return "R$ 0,00"
 
@@ -395,7 +398,6 @@ def conectar_google_sheets():
         return sheet
     except Exception as e:
         st.error(f"❌ Erro na conexão com Google Sheets: {str(e)}")
-        registrar_log("ERRO", "Falha conexão Google Sheets", str(e))
         return None
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -494,20 +496,6 @@ def salvar_no_google(aba: str, linha_dados: Dict) -> tuple:
             if col_name in headers:
                 index = headers.index(col_name)
                 nova_linha[index] = valor
-            else:
-                # Tentar variações de acentuação
-                variacoes = [
-                    col_name.replace("ç", "c"),
-                    col_name.replace("c", "ç"),
-                    col_name.replace("ã", "a"),
-                    col_name.replace("a", "ã")
-                ]
-                
-                for var in variacoes:
-                    if var in headers:
-                        index = headers.index(var)
-                        nova_linha[index] = valor
-                        break
         
         # Inserir linha
         ws.append_row(nova_linha)
@@ -515,13 +503,9 @@ def salvar_no_google(aba: str, linha_dados: Dict) -> tuple:
         # Invalidar cache para esta aba
         st.cache_data.clear()
         
-        # Criar backup automático
-        criar_backup_local()
-        
         return True, "✅ Dados salvos com sucesso!"
     
     except Exception as e:
-        registrar_log("ERRO", f"Falha ao salvar em {aba}", str(e))
         return False, f"❌ Erro ao salvar: {str(e)}"
 
 def excluir_agendamento(indice_linha: int) -> bool:
@@ -537,9 +521,6 @@ def excluir_agendamento(indice_linha: int) -> bool:
         # Invalidar cache
         st.cache_data.clear()
         
-        # Registrar log
-        registrar_log("Sistema", "Agendamento excluído", f"Linha {indice_linha}")
-        
         return True
     except Exception as e:
         st.error(f"Erro ao excluir: {str(e)}")
@@ -553,8 +534,8 @@ def carregar_catalogo() -> pd.DataFrame:
                      "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
         "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
-        "Higi. Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0],
-        "Higi. Interna (Teto/Carpete)": [150.0, 150.0, 180.0, 200.0, 250.0, 0.0],
+        "Higienização Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0],
+        "Higienização Interna (Teto/Carpete)": [150.0, 150.0, 180.0, 200.0, 250.0, 0.0],
         "Combo Premium": [300.0, 320.0, 350.0, 400.0, 450.0, 0.0],
         "Limpeza Motor": [100.0, 100.0, 120.0, 150.0, 150.0, 80.0],
         "Faróis": [200.0, 200.0, 200.0, 200.0, 200.0, 100.0],
@@ -565,22 +546,22 @@ def carregar_catalogo() -> pd.DataFrame:
 def obter_icone_html(categoria: str) -> str:
     """Retorna ícone HTML baseado na categoria do veículo"""
     if not isinstance(categoria, str):
-        return '<i class="bi bi-car-front-fill"></i>'
+        return '🚗'
     
     c = categoria.lower()
     
     if "moto" in c:
-        return '<i class="bi bi-motorcycle"></i>'
+        return '🏍️'
     elif "suv" in c or "picape" in c or "caminhonete" in c:
-        return '<i class="bi bi-truck-front-fill"></i>'
+        return '🚙'
     elif "van" in c or "utilitário" in c:
-        return '<i class="bi bi-bus-front-fill"></i>'
+        return '🚐'
     elif "hatch" in c or "compacto" in c:
-        return '<i class="bi bi-car-front"></i>'
+        return '🚗'
     elif "sedã" in c or "sedan" in c:
-        return '<i class="bi bi-car-front-fill"></i>'
+        return '🚘'
     else:
-        return '<i class="bi bi-car-front-fill"></i>'
+        return '🚗'
 
 def gerar_pdf(cliente: str, carro: str, placa: str, data_servico: str,
              servicos_com_precos: Dict, total: float) -> bytes:
@@ -631,7 +612,7 @@ def gerar_pdf(cliente: str, carro: str, placa: str, data_servico: str,
     # Total
     pdf.ln(5)
     pdf.set_font("Arial", "B", 14)
-    pdf.cell(140, 10, txt="TOTAL", align='R')
+    pdf.cell(140, 10, txt("TOTAL", align='R'))
     pdf.cell(50, 10, txt=txt(f"R$ {total:.2f}"), border=1, align='C')
     
     # Rodapé
@@ -642,33 +623,6 @@ def gerar_pdf(cliente: str, carro: str, placa: str, data_servico: str,
     
     return pdf.output(dest="S").encode("latin-1")
 
-def criar_backup_local():
-    """Cria backup automático dos dados"""
-    try:
-        backup_data = {}
-        
-        for aba in ["Vendas", "Agendamentos", "Despesas"]:
-            df = carregar_dados_com_cache(aba)
-            backup_data[aba] = df.to_dict(orient='records')
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"backups/backup_{timestamp}.json"
-        
-        # Criar diretório se não existir
-        os.makedirs("backups", exist_ok=True)
-        
-        with open(backup_file, "w", encoding='utf-8') as f:
-            json.dump(backup_data, f, ensure_ascii=False, indent=2)
-        
-        # Manter apenas últimos 10 backups
-        backups = sorted([f for f in os.listdir("backups") if f.startswith("backup_")])
-        if len(backups) > 10:
-            for old_backup in backups[:-10]:
-                os.remove(os.path.join("backups", old_backup))
-    
-    except Exception as e:
-        print(f"Erro ao criar backup: {e}")
-
 def registrar_log(usuario: str, acao: str, detalhes: str = ""):
     """Registra log de atividades"""
     try:
@@ -676,8 +630,7 @@ def registrar_log(usuario: str, acao: str, detalhes: str = ""):
             "timestamp": datetime.now().isoformat(),
             "usuario": usuario,
             "acao": acao,
-            "detalhes": detalhes,
-            "ip": st.experimental_user.ip if hasattr(st.experimental_user, 'ip') else "N/A"
+            "detalhes": detalhes
         }
         
         # Salvar em arquivo de log
@@ -716,15 +669,6 @@ def verificar_agendamentos_proximos():
                 f"⚠️ Você tem {len(proximos)} agendamento(s) para amanhã!",
                 icon="⚠️"
             )
-        
-        # Agendamentos para hoje
-        hoje_agendamentos = df_a[df_a['Data_dt'] == hoje]
-        
-        if not hoje_agendamentos.empty():
-            st.toast(
-                f"📅 Hoje: {len(hoje_agendamentos)} serviço(s) agendado(s)",
-                icon="📅"
-            )
     
     except Exception as e:
         print(f"Erro ao verificar agendamentos: {e}")
@@ -737,8 +681,6 @@ def calcular_kpis() -> Dict:
     if df_v.empty:
         return {}
     
-    hoje = datetime.now()
-    
     try:
         # Ticket médio
         vendas_concluidas = df_v[df_v["Status"] == "Concluído"]
@@ -750,84 +692,15 @@ def calcular_kpis() -> Dict:
         taxa_conversao = (total_concluidos / (total_concluidos + total_orcamentos) * 100 
                          if (total_concluidos + total_orcamentos) > 0 else 0)
         
-        # Lucratividade por serviço
-        lucratividade_media = vendas_concluidas["Lucro Liquido"].mean() if not vendas_concluidas.empty else 0
-        
-        # Serviço mais popular
-        if "Serviços" in df_v.columns:
-            todos_servicos = []
-            for servicos in df_v["Serviços"]:
-                if isinstance(servicos, str):
-                    todos_servicos.extend([s.strip() for s in servicos.split(",")])
-            
-            if todos_servicos:
-                from collections import Counter
-                servico_mais_popular = Counter(todos_servicos).most_common(1)
-                if servico_mais_popular:
-                    servico_mais_popular = servico_mais_popular[0][0]
-                else:
-                    servico_mais_popular = "Nenhum"
-            else:
-                servico_mais_popular = "Nenhum"
-        else:
-            servico_mais_popular = "Nenhum"
-        
         return {
             "ticket_medio": ticket_medio,
             "taxa_conversao": taxa_conversao,
-            "lucratividade_media": lucratividade_media,
-            "servico_popular": servico_mais_popular,
             "total_clientes": len(df_v["Cliente"].unique()),
-            "carros_ativos": len(df_v["Placa"].unique())
         }
     
     except Exception as e:
         print(f"Erro ao calcular KPIs: {e}")
         return {}
-
-def exportar_dados_periodo(formato: str = "csv", periodo: str = "mes_atual"):
-    """Exporta dados para diferentes formatos"""
-    dados = carregar_todos_dados()
-    hoje = datetime.now()
-    
-    # Filtrar por período
-    if periodo == "mes_atual":
-        data_inicio = hoje.replace(day=1)
-        data_fim = hoje
-    elif periodo == "ultimo_mes":
-        data_inicio = (hoje.replace(day=1) - timedelta(days=1)).replace(day=1)
-        data_fim = hoje.replace(day=1) - timedelta(days=1)
-    else:  # ano atual
-        data_inicio = hoje.replace(month=1, day=1)
-        data_fim = hoje
-    
-    # Filtrar dados
-    dados_filtrados = {}
-    for nome, df in dados.items():
-        if not df.empty and 'Data_dt' in df.columns:
-            mask = (df['Data_dt'] >= pd.Timestamp(data_inicio)) & \
-                   (df['Data_dt'] <= pd.Timestamp(data_fim))
-            dados_filtrados[nome] = df[mask]
-        else:
-            dados_filtrados[nome] = df
-    
-    # Exportar
-    if formato == "csv":
-        output = {}
-        for nome, df in dados_filtrados.items():
-            output[nome] = df.to_csv(index=False).encode('utf-8')
-        return output
-    
-    elif formato == "excel":
-        import io
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            for nome, df in dados_filtrados.items():
-                df.to_excel(writer, sheet_name=nome[:30], index=False)
-        output.seek(0)
-        return output
-    
-    return None
 
 # ==============================================================================
 # --- 5. CABEÇALHO E NAVEGAÇÃO ---
@@ -857,11 +730,8 @@ menu_selecionado = st.radio(
 
 st.write("---")
 
-# Verificar notificações de agendamentos
-verificar_agendamentos_proximos()
-
 # ==============================================================================
-# --- 6. PÁGINAS DO SISTEMA ---
+# --- 6. PÁGINAS DO SISTEMA CORRIGIDAS ---
 # ==============================================================================
 
 def page_dashboard():
@@ -960,27 +830,6 @@ def page_dashboard():
             ''',
             unsafe_allow_html=True
         )
-    
-    st.write("---")
-    
-    # KPIs Avançados
-    st.markdown("### 📊 KPIs de Performance", unsafe_allow_html=True)
-    kpis = calcular_kpis()
-    
-    if kpis:
-        col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4)
-        
-        with col_kpi1:
-            st.metric("Ticket Médio", formatar_moeda(kpis.get("ticket_medio", 0)))
-        
-        with col_kpi2:
-            st.metric("Taxa de Conversão", f"{kpis.get('taxa_conversao', 0):.1f}%")
-        
-        with col_kpi3:
-            st.metric("Clientes Únicos", kpis.get("total_clientes", 0))
-        
-        with col_kpi4:
-            st.metric("Serviço Popular", kpis.get("servico_popular", "N/A"))
     
     st.write("---")
     
@@ -1085,12 +934,12 @@ def page_dashboard():
                         <div style="background-color:#161616; padding:15px; border-radius:12px; 
                                  margin-bottom:10px; border-left:4px solid #D90429;">
                             <div style="font-size:12px; color:#aaa; margin-bottom:5px">
-                                <i class="bi bi-calendar"></i> {r['Data']} • {r['Hora']}
+                                <i class="bi bi-calendar"></i> {r.get('Data', 'N/A')} • {r.get('Hora', 'N/A')}
                             </div>
                             <div style="font-weight:bold; font-size:16px; color:white">
-                                {obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']}
+                                {obter_icone_html(r.get("Categoria", ""))} {r.get('Veiculo', 'N/A')}
                             </div>
-                            <div style="font-size:13px; color:#888;">{r['Cliente']}</div>
+                            <div style="font-size:13px; color:#888;">{r.get('Cliente', 'N/A')}</div>
                         </div>
                         ''',
                         unsafe_allow_html=True
@@ -1099,18 +948,6 @@ def page_dashboard():
                 st.info("🎉 Agenda livre para os próximos dias!")
         else:
             st.info("📅 Nenhum agendamento futuro encontrado.")
-        
-        # Botão de exportação rápida
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("📤 Exportar Relatório do Mês", use_container_width=True):
-            dados_export = exportar_dados_periodo("csv", "mes_atual")
-            if dados_export:
-                st.download_button(
-                    label="⬇️ Baixar CSV",
-                    data=dados_export["vendas"],
-                    file_name=f"vendas_{hoje.strftime('%Y%m')}.csv",
-                    mime="text/csv"
-                )
 
 def page_financeiro():
     """Página de gestão financeira"""
@@ -1139,8 +976,7 @@ def page_financeiro():
     with col_status1:
         st.metric(
             "💰 Caixa da Empresa",
-            formatar_moeda(fundo_caixa),
-            delta=formatar_moeda(fundo_caixa * 0.1) + " (último mês)"
+            formatar_moeda(fundo_caixa)
         )
     
     with col_status2:
@@ -1162,88 +998,29 @@ def page_financeiro():
     st.markdown("### 🧾 Pagamento de Comissões")
     
     if comissao_pendente > 0:
-        col_btn1, col_btn2 = st.columns([1, 3])
-        
-        with col_btn1:
-            if st.button("✅ Pagar Todas as Comissões", use_container_width=True):
-                # Confirmação
-                with st.popover("⚠️ Confirmar Pagamento"):
-                    st.write(f"Valor total a pagar: {formatar_moeda(comissao_pendente)}")
-                    st.write("Esta ação marcará TODAS as comissões como PAGAS.")
+        if st.button("✅ Pagar Todas as Comissões", use_container_width=True):
+            try:
+                sheet = conectar_google_sheets()
+                if sheet:
+                    ws = sheet.worksheet("Vendas")
+                    dados = ws.get_all_records()
+                    header = ws.row_values(1)
                     
-                    col_confirm1, col_confirm2 = st.columns(2)
-                    
-                    with col_confirm1:
-                        if st.button("👍 Confirmar Pagamento"):
-                            try:
-                                sheet = conectar_google_sheets()
-                                if sheet:
-                                    ws = sheet.worksheet("Vendas")
-                                    dados = ws.get_all_records()
-                                    header = ws.row_values(1)
-                                    
-                                    if "Status Comissao" in header:
-                                        col_idx = header.index("Status Comissao") + 1
-                                        
-                                        # Atualizar todas as linhas
-                                        for i in range(2, len(dados) + 2):
-                                            ws.update_cell(i, col_idx, "Pago")
-                                        
-                                        st.success("✅ Todas as comissões foram pagas!")
-                                        registrar_log("Financeiro", "Comissões pagas", 
-                                                     f"Valor: {comissao_pendente}")
-                                        t_sleep.sleep(2)
-                                        st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Erro ao processar: {str(e)}")
-                    
-                    with col_confirm2:
-                        if st.button("👎 Cancelar"):
-                            st.rerun()
-        
-        with col_btn2:
-            st.info(f"💰 Total pendente: **{formatar_moeda(comissao_pendente)}**")
+                    if "Status Comissao" in header:
+                        col_idx = header.index("Status Comissao") + 1
+                        
+                        # Atualizar todas as linhas
+                        for i in range(2, len(dados) + 2):
+                            ws.update_cell(i, col_idx, "Pago")
+                        
+                        st.success("✅ Todas as comissões foram pagas!")
+                        t_sleep.sleep(2)
+                        st.rerun()
+            except Exception as e:
+                st.error(f"❌ Erro ao processar: {str(e)}")
     
     else:
         st.success("🎉 Todas as comissões estão em dia!")
-    
-    # Gráfico de evolução financeira
-    st.write("---")
-    st.markdown("### 📊 Evolução Financeira")
-    
-    if not df_v.empty and 'Data_dt' in df_v.columns:
-        # Agrupar por mês
-        df_v['Mes'] = df_v['Data_dt'].dt.to_period('M')
-        evolucao = df_v.groupby('Mes').agg({
-            'Total': 'sum',
-            'Lucro Liquido': 'sum',
-            'Fundo Caixa': 'sum'
-        }).reset_index()
-        
-        if not evolucao.empty:
-            evolucao['Mes'] = evolucao['Mes'].astype(str)
-            
-            chart = alt.Chart(evolucao).transform_fold(
-                ['Total', 'Lucro Liquido'],
-                as_=['Metric', 'Value']
-            ).mark_line(point=True).encode(
-                x=alt.X('Mes:N', title='Mês'),
-                y=alt.Y('Value:Q', title='Valor (R$)'),
-                color=alt.Color('Metric:N', scale=alt.Scale(
-                    domain=['Total', 'Lucro Liquido'],
-                    range=['#00B4DB', '#39FF14']
-                )),
-                strokeWidth=alt.value(3)
-            ).properties(
-                height=300,
-                background='transparent'
-            )
-            
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.info("📈 Insuficientes dados para gerar gráfico de evolução.")
-    else:
-        st.info("📊 Nenhum dado financeiro disponível para análise.")
 
 def page_agendamento():
     """Página de agendamentos"""
@@ -1283,23 +1060,22 @@ def page_agendamento():
             
             categoria = st.selectbox(
                 "Categoria do Veículo *:",
-                df_cat["Categoria"],
-                help="Selecione a categoria que melhor descreve o veículo"
+                df_cat["Categoria"]
             )
             
             servicos_disponiveis = [c for c in df_cat.columns if c != "Categoria"]
             servicos_selecionados = st.multiselect(
                 "Selecione os Serviços *:",
-                servicos_disponiveis,
-                help="Pressione CTRL para selecionar múltiplos serviços"
+                servicos_disponiveis
             )
             
             # Cálculo em tempo real
             if servicos_selecionados:
-                precos = {
-                    serv: df_cat[df_cat["Categoria"] == categoria][serv].values[0]
-                    for serv in servicos_selecionados
-                }
+                precos = {}
+                for serv in servicos_selecionados:
+                    valor = df_cat[df_cat["Categoria"] == categoria][serv].values
+                    if len(valor) > 0:
+                        precos[serv] = valor[0]
                 
                 st.markdown("### 💰 Resumo Financeiro")
                 
@@ -1404,24 +1180,6 @@ def page_agendamento():
                         if sucesso:
                             st.success("🎉 Agendamento confirmado com sucesso!")
                             st.balloons()
-                            
-                            # Gerar PDF
-                            pdf_bytes = gerar_pdf(
-                                cliente,
-                                veiculo,
-                                placa,
-                                data_ag.strftime("%d/%m/%Y"),
-                                precos,
-                                total_final
-                            )
-                            
-                            st.download_button(
-                                label="📄 Baixar Orçamento (PDF)",
-                                data=pdf_bytes,
-                                file_name=f"orcamento_{placa}_{data_ag.strftime('%Y%m%d')}.pdf",
-                                mime="application/pdf"
-                            )
-                            
                             t_sleep.sleep(3)
                             st.rerun()
                         else:
@@ -1437,381 +1195,159 @@ def page_agendamento():
         if df_a.empty:
             st.info("📅 Nenhum agendamento registrado.")
         else:
-            # Filtros
-            col_filtro1, col_filtro2 = st.columns(2)
-            
-            with col_filtro1:
-                filtrar_data = st.checkbox("Filtrar por data")
-            
-            with col_filtro2:
-                if filtrar_data:
-                    data_filtro = st.date_input(
-                        "Data específica",
-                        value=date.today()
-                    )
-                    df_a = df_a[df_a['Data'] == data_filtro.strftime("%d/%m/%Y")]
-            
-            # Ordenação
-            col_ord1, col_ord2 = st.columns(2)
-            
-            with col_ord1:
-                ordenar_por = st.selectbox(
-                    "Ordenar por:",
-                    ["Data (mais recente)", "Data (mais antigo)", "Valor (maior)", "Valor (menor)"]
-                )
-            
-            # Aplicar ordenação
-            if ordenar_por == "Data (mais recente)" and 'Data_dt' in df_a.columns:
-                df_a = df_a.sort_values(by='Data_dt', ascending=False)
-            elif ordenar_por == "Data (mais antigo)" and 'Data_dt' in df_a.columns:
-                df_a = df_a.sort_values(by='Data_dt', ascending=True)
-            elif ordenar_por == "Valor (maior)":
-                df_a = df_a.sort_values(by='Total', ascending=False)
-            elif ordenar_por == "Valor (menor)":
-                df_a = df_a.sort_values(by='Total', ascending=True)
-            
-            # Exibir agendamentos
             for i, (_, r) in enumerate(df_a.iterrows()):
-                st.markdown(
-                    f"""
-                    <div class="agenda-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center">
-                            <div style="font-weight:bold; color:#00B4DB; font-size:16px">
-                                <i class="bi bi-clock"></i> {r['Data']} às {r['Hora']}
-                            </div>
-                            <div style="font-weight:800; font-size:18px; color:#39FF14">
-                                {formatar_moeda(float(r['Total']))}
-                            </div>
-                        </div>
-                        <div style="margin-top:10px; font-size:18px; font-weight:700; color:white">
-                            {obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']} 
-                            <span style="font-size:14px; color:#888">({r['Placa']})</span>
-                        </div>
-                        <div style="margin-top:5px; font-size:14px; color:#ccc">
-                            <i class="bi bi-person-fill"></i> {r['Cliente']}
-                        </div>
-                        <div style="margin-top:10px; padding-top:10px; border-top:1px solid #333; 
-                                 font-size:13px; color:#888">
-                            🔧 {r['Servicos']}
-                        </div>
-                        <div style="margin-top:10px; font-size:12px; color:#666">
-                            <i class="bi bi-person-workspace"></i> Executor: {r['Executor']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                # Botões de ação
-                col_btn1, col_btn2, col_btn3 = st.columns(3)
-                
-                with col_btn1:
-                    if st.button(f"✅ Concluir", key=f"ok_{i}", use_container_width=True):
-                        # Cálculos financeiros
-                        total_val = float(r["Total"])
-                        fundo = total_val * 0.10
-                        comissao = total_val * 0.40 if "Equipe" in r["Executor"] else 0.0
-                        lucro = total_val - fundo - comissao
+                with st.container(border=True):
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.markdown(f"**{r.get('Veiculo', 'N/A')}** - {r.get('Cliente', 'N/A')}")
+                        st.markdown(f"📅 {r.get('Data', 'N/A')} às {r.get('Hora', 'N/A')}")
+                        st.markdown(f"🔧 {r.get('Servicos', 'N/A')}")
+                    
+                    with col2:
+                        st.markdown(f"**{formatar_moeda(float(r.get('Total', 0)))}**")
                         
-                        # Dados da venda
-                        venda = {
-                            "Data": r["Data"],
-                            "Cliente": r["Cliente"],
-                            "Carro": r["Veiculo"],
-                            "Placa": r["Placa"],
-                            "Serviços": r["Servicos"],
-                            "Total": total_val,
-                            "Status": "Concluído",
-                            "Funcionario": r["Executor"],
-                            "Valor Comissao": comissao,
-                            "Fundo Caixa": fundo,
-                            "Lucro Liquido": lucro,
-                            "Status Comissao": "Pendente",
-                            "Categoria": r.get("Categoria", "")
-                        }
+                        col_btn1, col_btn2 = st.columns(2)
                         
-                        # Salvar venda e excluir agendamento
-                        salvar_no_google("Vendas", venda)
-                        excluir_agendamento(i)
+                        with col_btn1:
+                            if st.button("✅", key=f"concluir_{i}", help="Concluir serviço"):
+                                total_val = float(r.get("Total", 0))
+                                fundo = total_val * 0.10
+                                comissao = total_val * 0.40 if "Equipe" in str(r.get("Executor", "")) else 0.0
+                                lucro = total_val - fundo - comissao
+                                
+                                venda = {
+                                    "Data": r.get("Data", ""),
+                                    "Cliente": r.get("Cliente", ""),
+                                    "Carro": r.get("Veiculo", ""),
+                                    "Placa": r.get("Placa", ""),
+                                    "Serviços": r.get("Servicos", ""),
+                                    "Total": total_val,
+                                    "Status": "Concluído",
+                                    "Funcionario": r.get("Executor", ""),
+                                    "Valor Comissao": comissao,
+                                    "Fundo Caixa": fundo,
+                                    "Lucro Liquido": lucro,
+                                    "Status Comissao": "Pendente",
+                                    "Categoria": r.get("Categoria", "")
+                                }
+                                
+                                salvar_no_google("Vendas", venda)
+                                excluir_agendamento(i)
+                                st.success("✅ Serviço concluído!")
+                                t_sleep.sleep(2)
+                                st.rerun()
                         
-                        st.success("✅ Serviço concluído e movido para vendas!")
-                        t_sleep.sleep(2)
-                        st.rerun()
-                
-                with col_btn2:
-                    if st.button(f"✏️ Editar", key=f"edit_{i}", use_container_width=True):
-                        st.info("⏳ Funcionalidade em desenvolvimento!")
-                
-                with col_btn3:
-                    if st.button(f"🗑️ Cancelar", key=f"del_{i}", use_container_width=True):
-                        # Confirmação
-                        with st.popover("⚠️ Confirmar Exclusão"):
-                            st.write(f"Deseja realmente excluir o agendamento?")
-                            st.write(f"**Cliente:** {r['Cliente']}")
-                            st.write(f"**Veículo:** {r['Veiculo']} ({r['Placa']})")
-                            st.write(f"**Data:** {r['Data']} às {r['Hora']}")
-                            
-                            col_conf1, col_conf2 = st.columns(2)
-                            
-                            with col_conf1:
-                                if st.button("👍 Sim, excluir", type="primary"):
-                                    if excluir_agendamento(i):
-                                        st.success("🗑️ Agendamento excluído!")
-                                        t_sleep.sleep(2)
-                                        st.rerun()
-                            
-                            with col_conf2:
-                                if st.button("👎 Cancelar"):
+                        with col_btn2:
+                            if st.button("🗑️", key=f"excluir_{i}", help="Excluir agendamento"):
+                                if excluir_agendamento(i):
+                                    st.success("🗑️ Agendamento excluído!")
+                                    t_sleep.sleep(2)
                                     st.rerun()
-                
-                st.write("---")
 
 def page_despesas():
-    """Página de gestão de despesas"""
+    """Página de gestão de despesas - CORRIGIDA"""
     st.markdown(
         '## <i class="bi bi-receipt" style="color: #D90429;"></i> Controle de Despesas',
         unsafe_allow_html=True
     )
     
-    tab_lancar, tab_analise = st.tabs(["📝 Lançar Despesa", "📊 Análise de Gastos"])
-    
-    with tab_lancar:
-        with st.form("form_despesa", clear_on_submit=True):
-            st.markdown("### 📄 Nova Despesa")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                data_desp = st.date_input(
-                    "Data da Despesa *",
-                    value=date.today(),
-                    format="DD/MM/YYYY"
-                )
-                descricao = st.text_input(
-                    "Descrição *",
-                    placeholder="Ex: Compra de produtos de limpeza"
-                )
-            
-            with col2:
-                categoria = st.selectbox(
-                    "Categoria *",
-                    ["Insumos", "Manutenção", "Marketing", "Salários", 
-                     "Aluguel", "Energia/Água", "Outros"]
-                )
-                valor = st.number_input(
-                    "Valor (R$) *",
-                    min_value=0.01,
-                    value=0.0,
-                    step=10.0
-                )
-            
-            observacoes = st.text_area(
-                "Observações",
-                placeholder="Detalhes adicionais sobre a despesa...",
-                height=100
+    with st.form("form_despesa", clear_on_submit=True):
+        st.markdown("### 📄 Nova Despesa")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            data_desp = st.date_input(
+                "Data da Despesa *",
+                value=date.today(),
+                format="DD/MM/YYYY"
             )
-            
-            col_submit1, col_submit2 = st.columns([1, 3])
-            
-            with col_submit1:
-                submit = st.form_submit_button(
-                    "💾 Salvar Despesa",
-                    type="primary",
-                    use_container_width=True
-                )
-            
-            with col_submit2:
-                if submit:
-                    if not descricao.strip():
-                        st.error("❌ Descrição é obrigatória!")
-                    elif valor <= 0:
-                        st.error("❌ Valor deve ser maior que zero!")
-                    else:
-                        dados_despesa = {
-                            "Data": data_desp.strftime("%d/%m/%Y"),
-                            "Descricao": descricao.strip(),
-                            "Categoria": categoria,
-                            "Valor": valor,
-                            "Observacoes": observacoes.strip(),
-                            "Status": "Pago"
-                        }
-                        
-                        sucesso, mensagem = salvar_no_google("Despesas", dados_despesa)
-                        
-                        if sucesso:
-                            st.success("✅ Despesa registrada com sucesso!")
-                            st.balloons()
-                            t_sleep.sleep(2)
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {mensagem}")
+            descricao = st.text_input(
+                "Descrição *",
+                placeholder="Ex: Compra de produtos de limpeza"
+            )
+        
+        with col2:
+            categoria = st.selectbox(
+                "Categoria *",
+                ["Insumos", "Manutenção", "Marketing", "Salários", 
+                 "Aluguel", "Energia/Água", "Outros"]
+            )
+            # CORREÇÃO CRÍTICA: value deve ser >= min_value
+            valor = st.number_input(
+                "Valor (R$) *",
+                min_value=0.01,
+                value=0.01,  # CORRIGIDO: valor inicial 0.01
+                step=10.0
+            )
+        
+        observacoes = st.text_area(
+            "Observações",
+            placeholder="Detalhes adicionais sobre a despesa...",
+            height=100
+        )
+        
+        # CORREÇÃO: Botão de submit dentro do form
+        submitted = st.form_submit_button(
+            "💾 Salvar Despesa",
+            type="primary",
+            use_container_width=True
+        )
+        
+        if submitted:
+            if not descricao.strip():
+                st.error("❌ Descrição é obrigatória!")
+            elif valor <= 0:
+                st.error("❌ Valor deve ser maior que zero!")
+            else:
+                dados_despesa = {
+                    "Data": data_desp.strftime("%d/%m/%Y"),
+                    "Descricao": descricao.strip(),
+                    "Categoria": categoria,
+                    "Valor": valor,
+                    "Observacoes": observacoes.strip(),
+                    "Status": "Pago"
+                }
+                
+                sucesso, mensagem = salvar_no_google("Despesas", dados_despesa)
+                
+                if sucesso:
+                    st.success("✅ Despesa registrada com sucesso!")
+                    st.balloons()
+                    t_sleep.sleep(2)
+                    st.rerun()
+                else:
+                    st.error(f"❌ {mensagem}")
     
-    with tab_analise:
-        st.markdown("### 📊 Análise de Despesas")
+    st.write("---")
+    
+    # Lista de despesas recentes
+    st.markdown("### 📋 Despesas Recentes")
+    
+    df_d = carregar_dados_com_cache("Despesas")
+    
+    if df_d.empty:
+        st.info("📊 Nenhuma despesa registrada ainda.")
+    else:
+        # Mostrar últimas 10 despesas
+        df_recentes = df_d.sort_values('Data_dt', ascending=False).head(10)
         
-        df_d = carregar_dados_com_cache("Despesas")
-        
-        if df_d.empty:
-            st.info("📊 Nenhuma despesa registrada ainda.")
-        else:
-            # KPIs rápidos
-            total_despesas = df_d["Valor"].sum()
-            media_mensal = df_d.groupby(
-                df_d['Data_dt'].dt.to_period('M')
-            )['Valor'].sum().mean() if 'Data_dt' in df_d.columns else 0
-            
-            col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-            
-            with col_kpi1:
-                st.metric("Total Gastos", formatar_moeda(total_despesas))
-            
-            with col_kpi2:
-                st.metric("Média Mensal", formatar_moeda(media_mensal))
-            
-            with col_kpi3:
-                maior_despesa = df_d["Valor"].max()
-                st.metric("Maior Despesa", formatar_moeda(maior_despesa))
-            
-            st.write("---")
-            
-            # Filtros
-            col_filt1, col_filt2 = st.columns(2)
-            
-            with col_filt1:
-                periodo = st.selectbox(
-                    "Período",
-                    ["Últimos 30 dias", "Últimos 90 dias", "Este mês", "Este ano", "Todo período"]
-                )
+        for _, r in df_recentes.iterrows():
+            with st.container(border=True):
+                col1, col2 = st.columns([3, 1])
                 
-                # Aplicar filtro de período
-                hoje = datetime.now()
-                if periodo == "Últimos 30 dias":
-                    data_inicio = hoje - timedelta(days=30)
-                    df_filtrado = df_d[df_d['Data_dt'] >= data_inicio]
-                elif periodo == "Últimos 90 dias":
-                    data_inicio = hoje - timedelta(days=90)
-                    df_filtrado = df_d[df_d['Data_dt'] >= data_inicio]
-                elif periodo == "Este mês":
-                    data_inicio = hoje.replace(day=1)
-                    df_filtrado = df_d[df_d['Data_dt'] >= data_inicio]
-                elif periodo == "Este ano":
-                    data_inicio = hoje.replace(month=1, day=1)
-                    df_filtrado = df_d[df_d['Data_dt'] >= data_inicio]
-                else:
-                    df_filtrado = df_d
-            
-            with col_filt2:
-                if 'Categoria' in df_filtrado.columns:
-                    categorias = ["Todas"] + sorted(df_filtrado['Categoria'].unique().tolist())
-                    categoria_filtro = st.selectbox("Categoria", categorias)
-                    
-                    if categoria_filtro != "Todas":
-                        df_filtrado = df_filtrado[df_filtrado['Categoria'] == categoria_filtro]
-            
-            # Gráficos
-            if not df_filtrado.empty:
-                col_graf1, col_graf2 = st.columns(2)
+                with col1:
+                    st.markdown(f"**{r.get('Descricao', 'N/A')}**")
+                    st.markdown(f"📅 {r.get('Data', 'N/A')} | 🏷️ {r.get('Categoria', 'N/A')}")
+                    if r.get('Observacoes'):
+                        st.markdown(f"📝 {r.get('Observacoes')}")
                 
-                with col_graf1:
-                    st.markdown("##### 📈 Evolução Temporal")
-                    
-                    if 'Data_dt' in df_filtrado.columns:
-                        evolucao = df_filtrado.set_index('Data_dt').resample('D')['Valor'].sum()
-                        
-                        if not evolucao.empty:
-                            chart = alt.Chart(
-                                evolucao.reset_index()
-                            ).mark_area(
-                                line={'color': '#D90429'},
-                                color=alt.Gradient(
-                                    gradient='linear',
-                                    stops=[
-                                        alt.GradientStop(color='#D90429', offset=0),
-                                        alt.GradientStop(color='#8D021F', offset=1)
-                                    ]
-                                )
-                            ).encode(
-                                x=alt.X('Data_dt:T', title='Data'),
-                                y=alt.Y('Valor:Q', title='Valor (R$)')
-                            ).properties(
-                                height=250
-                            )
-                            
-                            st.altair_chart(chart, use_container_width=True)
-                
-                with col_graf2:
-                    st.markdown("##### 🏷️ Por Categoria")
-                    
-                    if 'Categoria' in df_filtrado.columns:
-                        por_categoria = df_filtrado.groupby('Categoria')['Valor'].sum().reset_index()
-                        
-                        if not por_categoria.empty:
-                            chart = alt.Chart(por_categoria).mark_bar().encode(
-                                y=alt.Y('Categoria:N', sort='-x', title='Categoria'),
-                                x=alt.X('Valor:Q', title='Valor (R$)'),
-                                color=alt.Color('Categoria:N', legend=None),
-                                tooltip=['Categoria', 'Valor']
-                            ).properties(
-                                height=250
-                            )
-                            
-                            st.altair_chart(chart, use_container_width=True)
-                
-                # Tabela detalhada
-                st.write("---")
-                st.markdown("##### 📋 Detalhamento das Despesas")
-                
-                # Ordenação
-                col_sort1, col_sort2 = st.columns(2)
-                
-                with col_sort1:
-                    ordenar_por = st.selectbox(
-                        "Ordenar tabela por:",
-                        ["Data (recente)", "Data (antiga)", "Valor (maior)", "Valor (menor)"]
-                    )
-                
-                # Aplicar ordenação
-                if ordenar_por == "Data (recente)" and 'Data_dt' in df_filtrado.columns:
-                    df_tabela = df_filtrado.sort_values('Data_dt', ascending=False)
-                elif ordenar_por == "Data (antiga)" and 'Data_dt' in df_filtrado.columns:
-                    df_tabela = df_filtrado.sort_values('Data_dt', ascending=True)
-                elif ordenar_por == "Valor (maior)":
-                    df_tabela = df_filtrado.sort_values('Valor', ascending=False)
-                elif ordenar_por == "Valor (menor)":
-                    df_tabela = df_filtrado.sort_values('Valor', ascending=True)
-                else:
-                    df_tabela = df_filtrado
-                
-                # Exibir tabela
-                st.dataframe(
-                    df_tabela[['Data', 'Descricao', 'Categoria', 'Valor', 'Observacoes']],
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Data": st.column_config.TextColumn("Data"),
-                        "Descricao": st.column_config.TextColumn("Descrição"),
-                        "Categoria": st.column_config.TextColumn("Categoria"),
-                        "Valor": st.column_config.NumberColumn(
-                            "Valor",
-                            format="R$ %.2f"
-                        ),
-                        "Observacoes": st.column_config.TextColumn("Observações")
-                    }
-                )
-                
-                # Botão de exportação
-                if st.button("📤 Exportar Relatório de Despesas", use_container_width=True):
-                    csv = df_tabela.to_csv(index=False).encode('utf-8')
-                    
-                    st.download_button(
-                        label="⬇️ Baixar CSV",
-                        data=csv,
-                        file_name=f"despesas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
+                with col2:
+                    st.markdown(f"**{formatar_moeda(float(r.get('Valor', 0)))}**")
 
 def page_historico():
-    """Página de histórico e garagem"""
+    """Página de histórico e garagem - COMPLETAMENTE CORRIGIDA"""
     st.markdown(
         '## <i class="bi bi-clock-history" style="color: #FFC107;"></i> Garagem & Histórico',
         unsafe_allow_html=True
@@ -1823,58 +1359,32 @@ def page_historico():
         st.info("🚗 Nenhum serviço registrado ainda.")
         return
     
-    # Filtros avançados
-    with st.expander("🔍 Filtros Avançados", expanded=False):
-        col_filt1, col_filt2, col_filt3 = st.columns(3)
-        
-        with col_filt1:
-            busca = st.text_input(
-                "Buscar (Cliente/Veículo/Placa)",
-                placeholder="Digite para buscar..."
-            ).strip().lower()
-        
-        with col_filt2:
-            if 'Data_dt' in df.columns:
-                datas_disponiveis = sorted(df['Data_dt'].dt.date.unique(), reverse=True)
-                data_filtro = st.selectbox(
-                    "Filtrar por data",
-                    ["Todas as datas"] + [str(d) for d in datas_disponiveis]
-                )
-            else:
-                data_filtro = "Todas as datas"
-        
-        with col_filt3:
-            if 'Status' in df.columns:
-                status_options = ["Todos"] + sorted(df['Status'].unique().tolist())
-                status_filtro = st.selectbox("Status", status_options)
-            else:
-                status_filtro = "Todos"
+    # Filtro de busca
+    busca = st.text_input(
+        "🔍 Buscar (Cliente/Veículo/Placa)",
+        placeholder="Digite para buscar..."
+    ).strip().lower()
     
-    # Aplicar filtros
-    df_filtrado = df.copy()
-    
+    # Aplicar filtro
     if busca:
-        mask = df_filtrado.apply(
-            lambda row: busca in str(row).lower(),
-            axis=1
-        )
-        df_filtrado = df_filtrado[mask]
-    
-    if data_filtro != "Todas as datas" and 'Data_dt' in df_filtrado.columns:
-        data_selecionada = pd.to_datetime(data_filtro).date()
-        df_filtrado = df_filtrado[
-            df_filtrado['Data_dt'].dt.date == data_selecionada
+        df_filtrado = df[
+            df.apply(
+                lambda row: busca in str(row).lower(),
+                axis=1
+            )
         ]
+    else:
+        df_filtrado = df
     
-    if status_filtro != "Todos" and 'Status' in df_filtrado.columns:
-        df_filtrado = df_filtrado[df_filtrado['Status'] == status_filtro]
+    # Ordenar por data mais recente
+    if 'Data_dt' in df_filtrado.columns:
+        df_filtrado = df_filtrado.sort_values('Data_dt', ascending=False)
     
     # Estatísticas
     total_registros = len(df_filtrado)
     valor_total = df_filtrado["Total"].sum() if total_registros > 0 else 0
-    lucro_total = df_filtrado["Lucro Liquido"].sum() if total_registros > 0 else 0
     
-    col_stat1, col_stat2, col_stat3 = st.columns(3)
+    col_stat1, col_stat2 = st.columns(2)
     
     with col_stat1:
         st.metric("📊 Total de Serviços", total_registros)
@@ -1882,149 +1392,52 @@ def page_historico():
     with col_stat2:
         st.metric("💰 Valor Total", formatar_moeda(valor_total))
     
-    with col_stat3:
-        st.metric("📈 Lucro Total", formatar_moeda(lucro_total))
-    
     st.write("---")
     
-    # Ordenação
-    col_sort1, col_sort2 = st.columns([1, 2])
-    
-    with col_sort1:
-        ordenar_por = st.selectbox(
-            "Ordenar por:",
-            ["Data (mais recente)", "Data (mais antigo)", "Valor (maior)", "Valor (menor)"]
-        )
-    
-    # Aplicar ordenação
-    if ordenar_por == "Data (mais recente)" and 'Data_dt' in df_filtrado.columns:
-        df_filtrado = df_filtrado.sort_values('Data_dt', ascending=False)
-    elif ordenar_por == "Data (mais antigo)" and 'Data_dt' in df_filtrado.columns:
-        df_filtrado = df_filtrado.sort_values('Data_dt', ascending=True)
-    elif ordenar_por == "Valor (maior)":
-        df_filtrado = df_filtrado.sort_values('Total', ascending=False)
-    elif ordenar_por == "Valor (menor)":
-        df_filtrado = df_filtrado.sort_values('Total', ascending=True)
-    
-    # Exibir histórico
+    # Exibir histórico - FORMA CORRIGIDA SEM HTML MAL FORMADO
     if total_registros == 0:
-        st.info("🔍 Nenhum resultado encontrado com os filtros aplicados.")
+        st.info("🔍 Nenhum resultado encontrado.")
     else:
         for _, r in df_filtrado.iterrows():
-            # Determinar cor da borda baseada no status
-            if str(r.get("Status", "")).lower() == "concluído":
-                cor_borda = "#28a745"
-                icone_status = "✅"
-            elif "pendente" in str(r.get("Status", "")).lower():
-                cor_borda = "#FFC107"
-                icone_status = "⏳"
-            else:
-                cor_borda = "#6c757d"
-                icone_status = "📝"
-            
-            # Card do histórico
-            html_card = f"""
-            <div class="history-card" style="border-left: 5px solid {cor_borda}">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h3 style="margin: 0; font-size: 20px; color: white; font-weight: 700;">
-                            {obter_icone_html(r.get("Categoria", ""))} {r.get("Carro", "N/A")}
-                            <span style="font-size: 14px; color: #666; margin-left: 10px;">
-                                {icone_status} {r.get("Status", "N/A")}
-                            </span>
-                        </h3>
-                        <p style="margin: 5px 0 0 0; color: #bbb; font-size: 14px;">
-                            <i class="bi bi-person"></i> {r.get("Cliente", "N/A")} 
-                            &nbsp;|&nbsp; 
-                            <i class="bi bi-tag"></i> {r.get("Placa", "N/A")}
-                        </p>
-                    </div>
-                    <div style="text-align: right;">
-                        <h2 style="margin: 0; color: #39FF14; font-weight: 700; font-size: 22px;">
-                            {formatar_moeda(float(r.get("Total", 0)))}
-                        </h2>
-                        <span style="background-color: #222; padding: 4px 8px; border-radius: 6px; 
-                                   font-size: 11px; text-transform: uppercase; letter-spacing: 1px; 
-                                   color: #aaa;">
-                            <i class="bi bi-calendar"></i> {r.get("Data", "N/A")}
-                        </span>
-                    </div>
-                </div>
+            # Usar containers do Streamlit em vez de HTML
+            with st.container(border=True):
+                # Cabeçalho
+                col_head1, col_head2 = st.columns([3, 1])
                 
-                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #333; 
-                           color: #888; font-size: 13px;">
-                    <i class="bi bi-tools"></i> {r.get("Serviços", "N/A")}
-                </div>
+                with col_head1:
+                    st.markdown(f"### {r.get('Carro', 'N/A')}")
+                    st.markdown(f"**Cliente:** {r.get('Cliente', 'N/A')} | **Placa:** {r.get('Placa', 'N/A')}")
+                    st.markdown(f"**Data:** {r.get('Data', 'N/A')} | **Status:** {r.get('Status', 'N/A')}")
                 
-                <div style="margin-top: 10px; display: flex; gap: 15px; font-size: 12px; color: #666;">
-                    <span>
-                        <i class="bi bi-cash"></i> 
-                        Comissão: {formatar_moeda(float(r.get("Valor Comissao", 0)))}
-                    </span>
-                    <span>
-                        <i class="bi bi-bank"></i> 
-                        Caixa: {formatar_moeda(float(r.get("Fundo Caixa", 0)))}
-                    </span>
-                    <span>
-                        <i class="bi bi-graph-up"></i> 
-                        Lucro: {formatar_moeda(float(r.get("Lucro Liquido", 0)))}
-                    </span>
-                </div>
+                with col_head2:
+                    st.markdown(f"# {formatar_moeda(float(r.get('Total', 0)))}")
                 
-                <div style="margin-top: 10px; font-size: 11px; color: #555;">
-                    <i class="bi bi-person-workspace"></i> 
-                    Executor: {r.get("Funcionario", "N/A")} | 
-                    Status Comissão: {r.get("Status Comissao", "N/A")}
-                </div>
-            </div>
-            """
-            
-            st.markdown(html_card, unsafe_allow_html=True)
-        
-        # Paginação (simples)
-        total_paginas = (total_registros + 9) // 10
-        if total_paginas > 1:
-            pagina_atual = st.number_input(
-                "Página",
-                min_value=1,
-                max_value=total_paginas,
-                value=1,
-                step=1
-            )
-            st.write(f"Mostrando {min(10, total_registros)} de {total_registros} registros")
-        
-        # Botões de ação
-        col_acao1, col_acao2, col_acao3 = st.columns(3)
-        
-        with col_acao1:
-            if st.button("📤 Exportar Histórico", use_container_width=True):
-                csv_data = df_filtrado.to_csv(index=False).encode('utf-8')
+                # Serviços
+                st.markdown(f"**Serviços:** {r.get('Serviços', 'N/A')}")
                 
-                st.download_button(
-                    label="⬇️ Baixar CSV",
-                    data=csv_data,
-                    file_name=f"historico_servicos_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
-        
-        with col_acao2:
-            if st.button("📊 Gerar Relatório", use_container_width=True):
-                # Análise por categoria
-                if 'Categoria' in df_filtrado.columns:
-                    analise_categoria = df_filtrado.groupby('Categoria').agg({
-                        'Total': ['count', 'sum', 'mean'],
-                        'Lucro Liquido': 'sum'
-                    }).round(2)
-                    
-                    st.write("### 📈 Análise por Categoria")
-                    st.dataframe(analise_categoria)
-        
-        with col_acao3:
-            if st.button("🔄 Atualizar Dados", use_container_width=True):
-                st.cache_data.clear()
-                st.success("✅ Cache limpo! Dados serão recarregados.")
-                t_sleep.sleep(2)
-                st.rerun()
+                # Detalhes financeiros
+                col_fin1, col_fin2, col_fin3 = st.columns(3)
+                
+                with col_fin1:
+                    st.metric(
+                        "Comissão",
+                        formatar_moeda(float(r.get("Valor Comissao", 0)))
+                    )
+                
+                with col_fin2:
+                    st.metric(
+                        "Caixa",
+                        formatar_moeda(float(r.get("Fundo Caixa", 0)))
+                    )
+                
+                with col_fin3:
+                    st.metric(
+                        "Lucro",
+                        formatar_moeda(float(r.get("Lucro Liquido", 0)))
+                    )
+                
+                # Informações adicionais
+                st.caption(f"Executor: {r.get('Funcionario', 'N/A')} | Status Comissão: {r.get('Status Comissao', 'N/A')}")
 
 # ==============================================================================
 # --- 7. ROTEADOR DE PÁGINAS ---
@@ -2045,13 +1458,13 @@ elif menu_selecionado == "HISTÓRICO":
 # --- 8. RODAPÉ ---
 # ==============================================================================
 
-st.markdown("<br><br><br>", unsafe_allow_html=True)  # Espaço para o rodapé fixo
+st.markdown("<br><br><br>", unsafe_allow_html=True)
 st.markdown(
     '''
     <div class="footer">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                💎 <b>JM Detail System PRO</b> | Versão 14.0
+                💎 <b>JM Detail System PRO</b> | Versão 14.1
             </div>
             <div>
                 🚗 Sistema de Gestão Automotiva
@@ -2075,13 +1488,5 @@ st.markdown(
 
 # Criar diretórios necessários na primeira execução
 if 'system_initialized' not in st.session_state:
-    os.makedirs("backups", exist_ok=True)
     os.makedirs("logs", exist_ok=True)
     st.session_state.system_initialized = True
-    
-    # Criar backup inicial
-    criar_backup_local()
-    
-    # Registrar início da sessão
-    registrar_log("Sistema", "Aplicativo iniciado", 
-                 f"Usuário: {st.experimental_user.email if hasattr(st.experimental_user, 'email') else 'N/A'}")
