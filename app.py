@@ -213,7 +213,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF CORRIGIDO ---
+# --- PDF ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -407,6 +407,7 @@ def page_agendamento():
             ext = ce1.number_input("Valor Extra", min_value=0.0); desc = ce2.number_input("Desconto", min_value=0.0); qm = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
             if servs:
+                # Prepara itens com valores para PDF e Cálculo
                 itens_calc = []
                 total = 0.0
                 for s in servs:
@@ -427,12 +428,13 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
-                            # FORMATAÇÃO ZAP CORRETA
-                            msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail! \n🚗 {veic} \n📅 {dt.strftime('%d/%m')} as {hr} \n💰 Total: {formatar_moeda(total)}"
+                            # CORREÇÃO ZAP: FORMATO LISTA E R$
+                            msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
+                    # PASSAMOS AGORA A LISTA DETALHADA
                     d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_calc, "Total": total}
                     st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento(d_pdf), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
 
@@ -441,6 +443,7 @@ def page_agendamento():
         if df_a.empty: st.info("Vazio.")
         else:
             for i, r in df_a.iterrows():
+                # BLINDAGEM NO CARD DE AGENDA
                 val_total = converter_valor(r.get('Total', 0))
                 st.markdown(f'<div class="agenda-card"><div style="display:flex; justify-content:space-between;"><b>{r["Data"]} {r["Hora"]}</b><b style="color:#39FF14">{formatar_moeda(val_total)}</b></div><div style="font-size:18px"><b>{obter_icone_html(r.get("Categoria",""))} {r["Veiculo"]}</b> ({r["Placa"]})</div><div>{r["Cliente"]}</div><div style="color:#888">🔧 {r["Servicos"]}</div></div>', unsafe_allow_html=True)
                 c_ok, c_zap, c_del = st.columns([2, 1, 1])
@@ -455,10 +458,11 @@ def page_agendamento():
                         z_clean = limpar_numero(r.get("Telefone"))
                         if z_clean:
                             val_fmt = formatar_moeda(converter_valor(r.get('Total', 0)))
-                            msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto aqui na JM Detail. ✨ Ficou top! Valor Total: {val_fmt}. Pode vir buscar!"
+                            # MENSAGEM ZAP CARRO PRONTO
+                            msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
-                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%">ENVIAR NO WHATSAPP</button>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
                     if st.button("🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i); st.rerun()
