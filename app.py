@@ -96,26 +96,42 @@ def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def conectar_google_sheets():
-    # Tenta conectar usando segredos ou arquivo local
-    try:
-        if "spreadsheet_id" in st.secrets["app"]:
-            return st.secrets["app"]["spreadsheet_id"]
-    except: pass
-    
-    # SEU ID DA PLANILHA AQUI (Backup)
+    # ID FIXO QUE VOCÊ CONFIRMOU
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     
     try:
-        if os.path.exists("chave_google.json"): client = gspread.service_account(filename="chave_google.json")
-        else: client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
-        return client.open_by_key(ID_FIXO)
-    except Exception as e: return None
+        # Tenta pegar dos secrets ou usa o fixo
+        if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
+            ID_FIXO = st.secrets["app"]["spreadsheet_id"]
+            
+        # Tenta autenticar (AQUI GERALMENTE É O ERRO)
+        if os.path.exists("chave_google.json"): 
+            client = gspread.service_account(filename="chave_google.json")
+        elif "gcp_service_account" in st.secrets:
+            client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
+        else:
+            st.error("🚨 ERRO CRÍTICO: Não encontrei as credenciais (chave_google.json ou Secrets). O sistema não consegue entrar no Google.")
+            return None
+
+        # Tenta abrir a planilha
+        sh = client.open_by_key(ID_FIXO)
+        return sh
+        
+    except Exception as e:
+        st.error(f"🚨 ERRO DE CONEXÃO: {e}")
+        return None
 
 def carregar_dados(aba):
     sheet = conectar_google_sheets()
     if sheet is None: return pd.DataFrame()
-    try: return pd.DataFrame(sheet.worksheet(aba).get_all_records())
-    except: return pd.DataFrame()
+    try: 
+        return pd.DataFrame(sheet.worksheet(aba).get_all_records())
+    except gspread.WorksheetNotFound:
+        st.error(f"🚨 ERRO: A aba '{aba}' não foi encontrada na planilha. Verifique o nome (maiúsculas/minúsculas).")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"🚨 Erro ao ler aba '{aba}': {e}")
+        return pd.DataFrame()
 
 def salvar_no_google(aba, linha_dados):
     sheet = conectar_google_sheets()
