@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.graph_objects as go 
+# plotly removido conforme solicitado
 from datetime import datetime, date, time, timedelta
 from fpdf import FPDF
 import gspread
@@ -42,7 +42,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (V13.0 - ÍCONES REAIS INJETADOS) ---
+# --- 3. ESTILO CSS (V13.0 - BLINDADO) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -90,29 +90,22 @@ st.markdown("""
     }
 
     /* --- INJEÇÃO DOS ÍCONES BOOTSTRAP (O SEGREDO) --- */
-    /* Cada linha abaixo coloca um ícone específico antes do texto do botão */
-    
-    /* 1. Dashboard -> Speedometer */
     div[role="radiogroup"] label:nth-of-type(1)::before {
         font-family: "bootstrap-icons"; content: "\\F5A6"; 
         margin-right: 8px; font-size: 16px;
     }
-    /* 2. Agenda -> Calendar Check */
     div[role="radiogroup"] label:nth-of-type(2)::before {
         font-family: "bootstrap-icons"; content: "\\F20E"; 
         margin-right: 8px; font-size: 16px;
     }
-    /* 3. Financeiro -> Cash Coin */
     div[role="radiogroup"] label:nth-of-type(3)::before {
         font-family: "bootstrap-icons"; content: "\\F23E"; 
         margin-right: 8px; font-size: 16px;
     }
-    /* 4. Despesas -> Receipt */
     div[role="radiogroup"] label:nth-of-type(4)::before {
         font-family: "bootstrap-icons"; content: "\\F4E9"; 
         margin-right: 8px; font-size: 16px;
     }
-    /* 5. Histórico -> Clock History */
     div[role="radiogroup"] label:nth-of-type(5)::before {
         font-family: "bootstrap-icons"; content: "\\F291"; 
         margin-right: 8px; font-size: 16px;
@@ -292,22 +285,35 @@ def page_dashboard():
     df_a = carregar_dados("Agendamentos")
     
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
+    lucro_recalculado = 0.0
     
     if not df_v.empty:
-        for c in ["Total", "Lucro Liquido"]:
-            df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
+        # Limpeza robusta da coluna Total
+        for c in ["Total"]:
+            if c in df_v.columns:
+                df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+        
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], format='%d/%m/%Y', errors='coerce')
         df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
+        
+        # Receita Bruta (Soma dos Totais Concluídos)
         receita_mes = df_mes[df_mes["Status"]=="Concluído"]["Total"].sum()
+        
+        # Lucro Operacional (Base para seu lucro)
+        # Regra: 50% do Bruto (pois 40% é comissão irmão e 10% é fundo caixa)
+        lucro_operacional = receita_mes * 0.50
+        
         pendente_total = df_v[df_v["Status"]=="Orçamento/Pendente"]["Total"].sum()
         count_p = len(df_v[df_v["Status"]=="Orçamento/Pendente"])
 
     if not df_d.empty:
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], format='%d/%m/%Y', errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
-        despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
+        # Limpeza robusta da coluna Valor
+        despesa_mes = pd.to_numeric(df_d_mes["Valor"].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0).sum()
     
-    lucro_final = receita_mes - despesa_mes
+    # CÁLCULO FINAL DE LUCRO REAL (Tempo Real)
+    lucro_final = lucro_operacional - despesa_mes
     
     c1, c2 = st.columns(2)
     with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
@@ -316,14 +322,13 @@ def page_dashboard():
     c3, c4 = st.columns(2)
     with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
     cor_lucro = "bg-green" if lucro_final >= 0 else "bg-red"
-    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>Após comissões/insumos</small></div>', unsafe_allow_html=True)
+    with c4: st.markdown(f'<div class="dash-card {cor_lucro}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
 
     st.write("---")
     
     col_graf, col_prox = st.columns([2, 1])
     
     with col_graf:
-        # Título com o ícone Verde Neon (Pedido V13)
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
             base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
@@ -332,17 +337,11 @@ def page_dashboard():
                 color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None),
                 tooltip=['Data', 'Cliente', 'Carro', 'Total', 'Lucro Liquido']
             )
-            line = base.mark_line(color='#0575E6', strokeWidth=3).encode(y=alt.Y('Lucro Liquido', axis=None))
-            chart = alt.layer(bars, line).properties(height=300, background='transparent').configure_view(strokeWidth=0).configure_axis(grid=False, domain=False, ticks=False)
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(bars.properties(height=300, background='transparent'), use_container_width=True)
         else:
             st.info("Sem dados de vendas neste mês.")
             
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('##### <i class="bi bi-bullseye" style="color:#D90429"></i> Meta Mensal', unsafe_allow_html=True)
-        fig = go.Figure(go.Indicator(mode = "gauge+number", value = receita_mes, domain = {'x': [0, 1], 'y': [0, 1]}, gauge = {'axis': {'range': [None, 6000], 'tickwidth': 1, 'tickcolor': "white"}, 'bar': {'color': "#D90429"}, 'bgcolor': "black", 'borderwidth': 2, 'bordercolor': "#333", 'steps': [{'range': [0, 1500], 'color': '#222'}, {'range': [1500, 3500], 'color': '#333'}], 'threshold': {'line': {'color': "#00B4DB", 'width': 4}, 'thickness': 0.75, 'value': 5000}}))
-        fig.update_layout(paper_bgcolor = "rgba(0,0,0,0)", font = {'color': "white", 'family': "Poppins"}, height=150, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig, use_container_width=True)
+        # O gráfico de ponteiro (gauge chart) foi removido daqui conforme solicitado.
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos na Agenda', unsafe_allow_html=True)
@@ -373,17 +372,39 @@ def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
     df_v = carregar_dados("Vendas")
     comissao_pendente = 0.0; fundo_caixa = 0.0
+    
     if not df_v.empty:
         if "Status Comissao" not in df_v.columns: df_v["Status Comissao"] = "Pendente"
-        for c in ["Valor Comissao", "Fundo Caixa"]:
-            if c in df_v.columns: df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace(',', '.'), errors='coerce').fillna(0)
-        comissao_pendente = df_v[df_v["Status Comissao"] != "Pago"]["Valor Comissao"].sum()
+        # Limpeza robusta
+        for c in ["Total", "Valor Comissao", "Fundo Caixa"]:
+            if c in df_v.columns: df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+        
+        # Filtra apenas o que está pendente
+        df_pendente = df_v[df_v["Status Comissao"] != "Pago"]
+        
+        # CÁLCULO DE SEGURANÇA: Recalcula 40% do Total se for Equipe para garantir a soma correta
+        # Assumindo que se tem "Valor Comissao" > 0 é porque era Equipe, ou podemos usar a coluna Funcionario
+        # Aqui, vamos somar a coluna Valor Comissao, mas como você pediu para garantir que some apenas as calculadas corretamente:
+        # Se você confia que os novos lançamentos estarão certos, somar a coluna é ok.
+        # Para ser "Blindado", vamos recalcular baseado no Total para exibição:
+        
+        # Identifica linhas que são de equipe (onde Valor Comissao > 0 ou Funcionario == Equipe)
+        # Vamos usar a coluna existente, mas garantindo que o valor somado seja coerente (40% do total)
+        # Se a planilha tem lixo, isso ajusta a visualização.
+        
+        # Recalculando comissões pendentes (apenas para exibição correta)
+        comissao_pendente = 0.0
+        for index, row in df_pendente.iterrows():
+             # Se for Equipe ou tiver valor de comissão lançado, considera 40% do total bruto
+             if row.get("Valor Comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
+                 comissao_pendente += (row["Total"] * 0.40)
+        
         fundo_caixa = df_v["Fundo Caixa"].sum()
     
     st.info(f"Caixa da Empresa (Acumulado): {formatar_moeda(fundo_caixa)}")
     
     col1, col2 = st.columns([2,1])
-    with col1: st.metric("Comissões Pendentes", formatar_moeda(comissao_pendente))
+    with col1: st.metric("Comissões Pendentes (Recalculado 40%)", formatar_moeda(comissao_pendente))
     with col2:
         if comissao_pendente > 0:
             if st.button("Pagar Comissões"):
@@ -426,8 +447,12 @@ def page_agendamento():
                 
                 if st.button("CONFIRMAR AGENDAMENTO", use_container_width=True):
                     serv_str = ", ".join(escolhidos)
-                    lucro = total - (total * 0.10) - (total * 0.40 if "Equipe" in quem else 0)
-                    dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro, "Categoria": cat}
+                    # Cálculo apenas para previsão (Salvar no Agendamento)
+                    comissao_prev = total * 0.40 if "Equipe" in quem else 0.0
+                    fundo_prev = total * 0.10
+                    lucro_prev = total - comissao_prev - fundo_prev
+                    
+                    dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Veiculo": veic, "Placa": placa, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat}
                     ok, msg = salvar_no_google("Agendamentos", dados)
                     if ok: st.success("Agendado!"); t_sleep.sleep(1); st.rerun()
                     else: st.error(msg)
@@ -461,11 +486,21 @@ def page_agendamento():
                 
                 c_btn1, c_btn2 = st.columns(2)
                 with c_btn1:
+                    # --- LÓGICA DE CONCLUSÃO DE SERVIÇO ---
                     if st.button(f"✅ Concluir Serviço", key=f"ok_{i}", use_container_width=True):
-                        fundo = float(r["Total"]) * 0.10
-                        comis = float(r["Total"]) * 0.40 if "Equipe" in r["Executor"] else 0.0
-                        lucro = float(r["Total"]) - fundo - comis
-                        venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": r["Total"], "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": comis, "Fundo Caixa": fundo, "Lucro Liquido": lucro, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
+                        # 1. Total (Bruto)
+                        total_bruto = float(r["Total"])
+                        
+                        # 2. Fundo de Caixa (10% do BRUTO)
+                        fundo = total_bruto * 0.10
+                        
+                        # 3. Comissão (40% do BRUTO se for Equipe)
+                        comis = total_bruto * 0.40 if "Equipe" in r["Executor"] else 0.0
+                        
+                        # 4. Lucro Líquido (O que sobra)
+                        lucro = total_bruto - fundo - comis
+                        
+                        venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": total_bruto, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": comis, "Fundo Caixa": fundo, "Lucro Liquido": lucro, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
                         salvar_no_google("Vendas", venda)
                         excluir_agendamento(i)
                         st.rerun()
