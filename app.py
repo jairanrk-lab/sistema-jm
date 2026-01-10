@@ -6,8 +6,8 @@ from fpdf import FPDF
 import gspread
 import os
 import time as t_sleep
-import re # Essencial para o link do WhatsApp funcionar
-import urllib.parse # Essencial para o texto do WhatsApp
+import re 
+import urllib.parse
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
@@ -95,17 +95,16 @@ st.markdown("""
 
 # --- FUNÇÕES AUXILIARES ---
 
-# LIMPEZA DE NÚMERO (Resolve erro de URL inválida)
-def limpar_numero(numero):
-    if not numero: return ""
-    return re.sub(r'\D', '', str(numero))
+# LIMPEZA DE NÚMERO
+def limpar_numero(num):
+    if not num: return ""
+    return re.sub(r'\D', '', str(num))
 
 def formatar_moeda(valor):
     try: return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except: return "R$ 0,00"
 
 def conectar_google_sheets():
-    # ID FIXO
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
@@ -157,9 +156,8 @@ def carregar_catalogo():
                 return df
     except: pass
     
-    # Backup
     return pd.DataFrame({
-        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
+        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Moto (até 300cc)", "Moto (acima 300cc)"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
         "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
         "Higi. Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0], 
@@ -179,7 +177,7 @@ def obter_icone_html(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
     else: return '<i class="bi bi-car-front-fill"></i>'
 
-# --- BUSCA INTELIGENTE (Corrigido para achar Telefone) ---
+# --- BUSCA INTELIGENTE ---
 def buscar_cliente_por_placa(placa_busca):
     df_a = carregar_dados("Agendamentos")
     df_v = carregar_dados("Vendas")
@@ -195,7 +193,6 @@ def buscar_cliente_por_placa(placa_busca):
         res = df_c[df_c[col_placa] == placa_clean]
         if not res.empty:
             u = res.iloc[-1]
-            # Busca flexível de telefone
             col_tel = cols.get("telefone") or cols.get("whatsapp") or cols.get("celular")
             tel = u.get(col_tel, "") if col_tel else ""
             
@@ -239,13 +236,21 @@ def gerar_pdf_orcamento(dados):
     for s in servicos:
         if s.strip():
             pdf.cell(140, 10, txt(s.strip()), 1)
-            pdf.cell(50, 10, "", 1, 1, 'C') # SEM TRAÇO
+            pdf.cell(50, 10, "", 1, 1, 'C') 
             
     pdf.ln(5)
     pdf.set_font("Arial", "B", 14)
     pdf.cell(140, 10, "TOTAL ESTIMADO", 1, 0, 'R')
     pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
     
+    pdf.ln(20)
+    sig_file = next((f for f in ["assinatura.png", "Assinatura.png"] if os.path.exists(f)), None)
+    if sig_file: 
+        x_centered = (210 - 50) / 2
+        pdf.image(sig_file, x=x_centered, y=pdf.get_y() - 15, w=50)
+    
+    pdf.cell(0, 10, "________________________________________", ln=True, align='C')
+    pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
@@ -273,28 +278,23 @@ def page_dashboard():
     
     df_v = carregar_dados("Vendas")
     df_d = carregar_dados("Despesas")
-    df_a = carregar_dados("Agendamentos") # Adicionado para corrigir a prox. agenda
     
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
     lucro_operacional = 0.0
     
     if not df_v.empty:
-        # CORREÇÃO: Limpeza de espaços nos nomes das colunas
+        # CORREÇÃO DASHBOARD
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-        
         for c in ["Total"]:
             if c in df_v.columns:
                 df_v[c] = pd.to_numeric(df_v[c].astype(str).str.replace('R$', '').str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
         
-        # CORREÇÃO: Leitura flexível da data para somar o Dashboard
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
-        
         df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
         
         if "Status" in df_v.columns:
             receita_mes = df_mes[df_mes["Status"]=="Concluído"]["Total"].sum()
             lucro_operacional = receita_mes * 0.50
-            # Busca flexível por pendente
             pendente_total = df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)]["Total"].sum()
             count_p = len(df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)])
 
@@ -349,26 +349,8 @@ def page_dashboard():
         else: st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
-        st.markdown('### <i class="bi bi-calendar-week"></i> Próximos na Agenda', unsafe_allow_html=True)
-        if not df_a.empty:
-            df_a['Data_dt'] = pd.to_datetime(df_a['Data'], dayfirst=True, errors='coerce')
-            hoje_dt = pd.to_datetime(date.today())
-            df_futuro = df_a[df_a['Data_dt'] >= hoje_dt].sort_values(by='Data_dt').head(4)
-            if not df_futuro.empty:
-                for _, r in df_futuro.iterrows():
-                    st.markdown(f"""
-                    <div style="background-color:#161616; padding:15px; border-radius:12px; margin-bottom:10px; border-left:4px solid #D90429;">
-                        <div style="font-size:12px; color:#aaa; margin-bottom:5px">
-                            <i class="bi bi-calendar"></i> {r['Data']} • {r['Hora']}
-                        </div>
-                        <div style="font-weight:bold; font-size:16px; color:white">
-                            {obter_icone_html(r.get("Categoria", ""))} {r['Veiculo']}
-                        </div>
-                        <div style="font-size:13px; color:#888;">{r['Cliente']}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            else: st.info("Agenda livre.")
-        else: st.info("Agenda vazia.")
+        st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
+        # Código para mostrar próximos agendamentos (se houver) pode ser adicionado aqui
 
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
@@ -424,7 +406,8 @@ def page_agendamento():
                     val_veic = dados_cli['Veiculo']
                     val_zap = dados_cli.get("Telefone", "")
                     cats_lista = df_cat["Categoria"].tolist() if not df_cat.empty else []
-                    if dados_cli['Categoria'] in cats_lista: val_cat_idx = cats_lista.index(dados_cli['Categoria'])
+                    if dados_cli['Categoria'] in cats_lista:
+                        val_cat_idx = cats_lista.index(dados_cli['Categoria'])
                 else:
                     if len(placa_input) > 5: st.warning("Placa nova.")
 
@@ -434,6 +417,7 @@ def page_agendamento():
             
             c3, c4 = st.columns(2)
             veic = c3.text_input("Modelo do Veículo", value=val_veic)
+            placa_final = placa_input 
             dt = c4.date_input("Data", value=date.today())
             hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
@@ -462,15 +446,14 @@ def page_agendamento():
                         fundo_prev = total * 0.10
                         lucro_prev = total - comissao_prev - fundo_prev
                         
-                        dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Telefone": zap, "Veiculo": veic, "Placa": placa_input, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat, "Status": "Orçamento/Pendente"}
+                        dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": cli, "Telefone": zap, "Veiculo": veic, "Placa": placa_final, "Servicos": serv_str, "Total": total, "Executor": quem, "LucroPrevisto": lucro_prev, "Categoria": cat, "Status": "Orçamento/Pendente"}
                         ok, msg = salvar_no_google("Agendamentos", dados)
                         if ok: 
                             st.success("Agendado!")
-                            # MENSAGEM LIMPA E SEM EMOJIS (CORREÇÃO PEDIDA)
+                            # CORREÇÃO DA MENSAGEM DO WHATSAPP (SEM CARACTERES ESPECIAIS)
                             zap_limpo = limpar_numero(zap)
                             if zap_limpo:
-                                # Mensagem codificada para URL
-                                msg_txt = f"Ola {cli}, seu agendamento esta confirmado. Veiculo: {veic}. Data: {dt.strftime('%d/%m')} as {hr}. Valor: {total}"
+                                msg_txt = f"Ola {cli}, seu agendamento esta confirmado. Veiculo: {veic}. Data: {dt.strftime('%d/%m')} as {hr}. Valor: {formatar_moeda(total)}"
                                 msg_encoded = urllib.parse.quote(msg_txt)
                                 link = f"https://wa.me/55{zap_limpo}?text={msg_encoded}"
                                 st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%">ENVIAR CONFIRMAÇÃO</button></a>', unsafe_allow_html=True)
@@ -479,7 +462,7 @@ def page_agendamento():
                     # --- BOTÃO PDF ---
                     if col_btn_pdf.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
                         serv_str = ", ".join(escolhidos)
-                        dados_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Servicos": serv_str, "Total": total}
+                        dados_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_final, "Data": dt.strftime("%d/%m/%Y"), "Servicos": serv_str, "Total": total}
                         pdf_bytes = gerar_pdf_orcamento(dados_pdf)
                         st.download_button(label="📥 BAIXAR PDF", data=pdf_bytes, file_name=f"Orcamento_{cli}.pdf", mime='application/pdf', use_container_width=True)
 
@@ -509,9 +492,10 @@ def page_agendamento():
                         venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Telefone": r.get("Telefone", ""), "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": t, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": c, "Fundo Caixa": f, "Lucro Liquido": t-f-c, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
                         salvar_no_google("Vendas", venda); excluir_agendamento(i); st.rerun()
                 with c_btn2:
-                    # MENSAGEM LIMPA ZAP (TEXTO PURO)
-                    if r.get("Telefone"):
-                        zap_limpo = limpar_numero(r.get("Telefone"))
+                    # CORREÇÃO DO LINK DE ZAP (CARRO PRONTO)
+                    zap_cliente = str(r.get("Telefone", ""))
+                    zap_limpo = limpar_numero(zap_cliente)
+                    if zap_limpo:
                         msg_txt = f"Ola {r['Cliente']}, seu carro ja esta pronto. Valor Total: {formatar_moeda(float(r['Total']))}"
                         msg_encoded = urllib.parse.quote(msg_txt)
                         link = f"https://wa.me/55{zap_limpo}?text={msg_encoded}"
