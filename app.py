@@ -1,3 +1,9 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.curdir))
+
+import streamlit as st
+# ... resto dos seus imports abaixo
 import streamlit as st
 import os
 
