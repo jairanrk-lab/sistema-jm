@@ -95,17 +95,14 @@ st.markdown("""
 
 # --- FUNÇÕES AUXILIARES ---
 
-# [NOVO] Função CRÍTICA para evitar o erro "string to float"
 def converter_valor(valor):
     if isinstance(valor, (int, float)): return float(valor)
     try:
-        # Remove R$, espaços e converte para ponto flutuante
         v = str(valor).replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
         if not v: return 0.0
         return float(v)
     except: return 0.0
 
-# [NOVO] Função para limpar telefone
 def limpar_numero(num):
     if not num: return ""
     return re.sub(r'\D', '', str(num))
@@ -115,7 +112,6 @@ def formatar_moeda(valor):
     except: return "R$ 0,00"
 
 def conectar_google_sheets():
-    # ID FIXO QUE VOCÊ CONFIRMOU
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
@@ -166,8 +162,10 @@ def carregar_catalogo():
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
+    
+    # CORREÇÃO DO CRASH: Arrays com tamanho IGUAL (6 itens)
     return pd.DataFrame({
-        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Moto (até 300cc)", "Moto (acima 300cc)"],
+        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
         "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
         "Higi. Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0], 
@@ -217,7 +215,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF CORRIGIDO (ITENS DETALHADOS E VALOR TOTAL) ---
+# --- PDF CORRIGIDO ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -244,22 +242,18 @@ def gerar_pdf_orcamento(dados):
     
     pdf.set_font("Arial", size=12)
     
-    # LÓGICA NOVA: SE RECEBER LISTA DE ITENS, IMPRIME O VALOR INDIVIDUAL
     if 'Itens' in dados and isinstance(dados['Itens'], list):
         for item in dados['Itens']:
             pdf.cell(140, 10, txt(item['desc']), 1)
             pdf.cell(50, 10, txt(f"R$ {item['val']:.2f}"), 1, 1, 'C')
     else:
-        # Fallback (caso antigo)
-        servicos = str(dados['Servicos']).split(',')
-        for s in servicos:
+        for s in str(dados['Servicos']).split(','):
             if s.strip():
                 pdf.cell(140, 10, txt(s.strip()), 1)
                 pdf.cell(50, 10, "", 1, 1, 'C') 
             
     pdf.ln(5)
     pdf.set_font("Arial", "B", 14)
-    # MUDANÇA: DE "TOTAL ESTIMADO" PARA "VALOR TOTAL"
     pdf.cell(140, 10, "VALOR TOTAL", 1, 0, 'R')
     pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
     
@@ -304,7 +298,7 @@ def page_dashboard():
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
         for c in ["Total"]:
             if c in df_v.columns:
-                df_v[c] = df_v[c].apply(converter_valor) # BLINDAGEM APLICADA
+                df_v[c] = df_v[c].apply(converter_valor)
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
         df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
         if "Status" in df_v.columns:
@@ -345,7 +339,7 @@ def page_dashboard():
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
-        # Código para mostrar próximos agendamentos (se houver) pode ser adicionado aqui
+        # Espaço para futuros agendamentos
 
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
@@ -404,27 +398,29 @@ def page_agendamento():
             c1, c2 = st.columns(2)
             cli = c1.text_input("Nome do Cliente", value=val_cli)
             zap = c2.text_input("WhatsApp (DDD+Número)", value=val_zap, placeholder="75999998888")
+            
             c3, c4 = st.columns(2)
             veic = c3.text_input("Modelo do Veículo", value=val_veic)
             dt = c4.date_input("Data", value=date.today()); hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
             cat = st.selectbox("Categoria:", df_cat["Categoria"], index=val_cat_idx)
-            servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c != "Categoria"])
+            # CORREÇÃO: REMOVE "TELEFONE" DA LISTA DE SERVIÇOS
+            servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c not in ["Categoria", "Telefone", "telefone", "Obs"]])
             ce1, ce2, ce3 = st.columns(3)
             ext = ce1.number_input("Valor Extra", min_value=0.0); desc = ce2.number_input("Desconto", min_value=0.0); qm = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
             if servs:
-                # --- LÓGICA NOVA: CRIAR LISTA DETALHADA PARA O PDF ---
-                itens_detalhados = []
+                # Prepara itens com valores para PDF e Cálculo
+                itens_calc = []
                 total = 0.0
                 for s in servs:
                     val = float(df_cat[df_cat["Categoria"] == cat][s].values[0])
                     total += val
-                    itens_detalhados.append({'desc': s, 'val': val})
+                    itens_calc.append({'desc': s, 'val': val})
                 
                 total = total + ext - desc
-                if ext > 0: itens_detalhados.append({'desc': "Valor Extra", 'val': ext})
-                if desc > 0: itens_detalhados.append({'desc': "Desconto", 'val': -desc})
+                if ext > 0: itens_calc.append({'desc': "Extra", 'val': ext})
+                if desc > 0: itens_calc.append({'desc': "Desconto", 'val': -desc})
 
                 st.markdown(f"<h3 style='text-align:right; color:#39FF14'>Total: {formatar_moeda(total)}</h3>", unsafe_allow_html=True)
                 
@@ -435,14 +431,13 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
-                            # CORREÇÃO: FORMATAR MOEDA NO ZAP
+                            # FORMATAÇÃO ZAP CORRETA
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail! \n🚗 {veic} \n📅 {dt.strftime('%d/%m/%Y')} as {hr} \n💰 Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO ZAP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
-                    # PASSAMOS AGORA A LISTA DETALHADA
-                    d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_detalhados, "Total": total}
+                    d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_calc, "Total": total}
                     st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento(d_pdf), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
 
     with tab_list:
@@ -470,7 +465,8 @@ def page_agendamento():
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
                     else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
-                    if st.button("🗑️", key=f"del_{i}", use_container_width=True): excluir_agendamento(i); st.rerun()
+                    if st.button("🗑️", key=f"del_{i}", use_container_width=True):
+                        excluir_agendamento(i); st.rerun()
 
 def page_despesas():
     st.markdown('## <i class="bi bi-receipt" style="color: #D90429;"></i> Despesas', unsafe_allow_html=True)
