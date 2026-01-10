@@ -18,11 +18,9 @@ st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", 
 def check_password():
     if st.session_state.get("password_correct", False):
         return True
-    
     if st.query_params.get("logado") == "true":
         st.session_state["password_correct"] = True
         return True
-
     try:
         if st.query_params.get("acesso_liberado") == "sim_mestre":
             return True
@@ -38,7 +36,6 @@ def check_password():
             if submit:
                 try: senha_correta = st.secrets["app"]["password"]
                 except: senha_correta = "1234"
-                
                 if pwd == senha_correta: 
                     st.session_state["password_correct"] = True
                     st.query_params["logado"] = "true"
@@ -55,43 +52,27 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
-    
     * { font-family: 'Poppins', sans-serif !important; }
-    
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
 
-    /* MENU SUPERIOR EM BLOCOS */
-    div[role="radiogroup"] {
-        display: flex !important; flex-direction: row !important; width: 100% !important;
-        justify-content: space-between !important; background-color: transparent !important;
-        border: none !important; padding: 0 !important; gap: 12px !important;
-    }
-    div[role="radiogroup"] label {
-        flex: 1 !important; background-color: #111 !important; border: 1px solid #333 !important;
-        padding: 12px 5px !important; border-radius: 8px !important; transition: all 0.3s ease !important;
-        margin: 0 !important; color: #888 !important; font-weight: 600 !important;
-        font-size: 16px !important; white-space: nowrap !important; display: flex;
-        align-items: center; justify-content: center !important;
-    }
+    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background-color: transparent !important; border: none !important; padding: 0 !important; gap: 12px !important; }
+    div[role="radiogroup"] label { flex: 1 !important; background-color: #111 !important; border: 1px solid #333 !important; padding: 12px 5px !important; border-radius: 8px !important; transition: all 0.3s ease !important; margin: 0 !important; color: #888 !important; font-weight: 600 !important; font-size: 16px !important; white-space: nowrap !important; display: flex; align-items: center; justify-content: center !important; }
     div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 8px; font-size: 18px; }
-
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: #1a1a1a !important; transform: translateY(-2px); }
     div[role="radiogroup"] label[data-checked="true"] { background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important; color: white !important; border-color: #D90429 !important; box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important; }
     
-    /* CARDS */
     .dash-card { border-radius: 15px; padding: 20px; color: white; margin-bottom: 20px; border: 1px solid #333; position: relative; overflow: hidden; height: 140px !important; display: flex; flex-direction: column; justify-content: center; }
     .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.15 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
     .bg-orange { background: linear-gradient(145deg, #FF9800, #F57C00); }
     .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
     .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
     .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
-    
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
@@ -219,7 +200,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF ---
+# --- PDF ORÇAMENTO ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -269,6 +250,51 @@ def gerar_pdf_orcamento(dados):
     
     pdf.cell(0, 10, "________________________________________", ln=True, align='C')
     pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
+    return pdf.output(dest="S").encode("latin-1")
+
+# --- NOVO: GERADOR DE RELATÓRIO MENSAL (PDF) ---
+def gerar_relatorio_mensal(df_mes, resumo):
+    pdf = FPDF()
+    pdf.add_page()
+    logo_file = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
+    if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
+    
+    def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt("JM DETAIL - RELATÓRIO MENSAL"), ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, txt(f"Período: {resumo['mes']}"), ln=True, align='C')
+    pdf.ln(10)
+    
+    # Resumo Financeiro
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt("RESUMO FINANCEIRO"), ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(100, 8, txt("Faturamento Bruto:"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['faturamento'])), 0, 1)
+    pdf.cell(100, 8, txt("Despesas Totais:"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['despesas'])), 0, 1)
+    pdf.cell(100, 8, txt("Comissões (Total):"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['comissoes'])), 0, 1)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(100, 10, txt("LUCRO LÍQUIDO FINAL:"), 0); pdf.cell(0, 10, txt(formatar_moeda(resumo['lucro'])), 0, 1)
+    pdf.ln(10)
+    
+    # Tabela de Serviços
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(30, 8, "DATA", 1, 0, 'C', 1)
+    pdf.cell(60, 8, "CLIENTE", 1, 0, 'L', 1)
+    pdf.cell(60, 8, "VEÍCULO", 1, 0, 'L', 1)
+    pdf.cell(40, 8, "VALOR", 1, 1, 'C', 1)
+    
+    pdf.set_font("Arial", size=9)
+    for _, r in df_mes.iterrows():
+        dt = r['Data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['Data_dt']) else str(r['Data'])
+        val = formatar_moeda(converter_valor(r['Total']))
+        pdf.cell(30, 7, txt(dt), 1, 0, 'C')
+        pdf.cell(60, 7, txt(str(r['Cliente'])[:25]), 1, 0, 'L')
+        pdf.cell(60, 7, txt(str(r['Carro'])[:25]), 1, 0, 'L')
+        pdf.cell(40, 7, txt(val), 1, 1, 'C')
+        
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
@@ -325,10 +351,10 @@ def page_dashboard():
     st.markdown(f'<div style="background-color: #161616; padding: 10px 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
-    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
-    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
+    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Mês Atual</small></div>', unsafe_allow_html=True)
     c3, c4 = st.columns(2)
-    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos</small></div>', unsafe_allow_html=True)
     with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
 
     st.write("---")
@@ -347,67 +373,86 @@ def page_dashboard():
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
         # Espaço para futuros agendamentos
 
-# --- FINANCEIRO 2.0 (ATUALIZADO) ---
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
     df_v = carregar_dados("Vendas")
+    df_d = carregar_dados("Despesas")
     
-    comissao_pendente = 0.0; fundo_caixa = 0.0; lucro_liquido = 0.0
-    df_pendente = pd.DataFrame()
-
+    comissao_pendente = 0.0; fundo_caixa = 0.0; total_bruto = 0.0; total_despesas = 0.0
+    
+    # Processa Vendas
     if not df_v.empty:
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-        
-        # Limpa e converte números
-        for c in ["Total", "Valor comissao", "Fundo caixa", "Lucro liquido"]:
+        if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
+        for c in ["Total", "Valor comissao", "Fundo caixa"]:
             if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
         
-        # Filtra o que está pendente de pagamento
-        if "Status comissao" in df_v.columns:
-            df_pendente = df_v[df_v["Status comissao"] != "Pago"].copy()
-            
-            # Calcula Comissões
-            for index, row in df_pendente.iterrows():
-                # Se for Equipe ou tiver valor na comissão
-                if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
-                    comissao_pendente += (row["Total"] * 0.40)
+        # Filtra Mês Atual para Relatório
+        df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
+        hoje = datetime.now()
+        df_mes = df_v[(df_v['Data_dt'].dt.month == hoje.month) & (df_v['Data_dt'].dt.year == hoje.year)]
+        total_bruto = df_mes[df_mes["Status"].str.strip()=="Concluído"]["Total"].sum()
+        
+        # Comissões Pendentes (Geral)
+        df_pendente = df_v[df_v["Status comissao"] != "Pago"]
+        for index, row in df_pendente.iterrows():
+             if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
+                 comissao_pendente += (row["Total"] * 0.40)
         
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
-        if "Lucro liquido" in df_v.columns: lucro_liquido = df_v["Lucro liquido"].sum()
 
-    # --- CARDS VISUAIS ---
+    # Processa Despesas Mês Atual
+    if not df_d.empty:
+        df_d.columns = [c.strip().capitalize() for c in df_d.columns]
+        df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
+        df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
+        if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
+
+    # Cards
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liquido)}</div><small>Já descontado tudo</small></div>', unsafe_allow_html=True)
+    lucro_liq_real = (total_bruto * 0.50) - total_despesas
+    c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado tudo)</small></div>', unsafe_allow_html=True)
 
     st.write("---")
     
-    # --- TABELA DE EXTRATO ---
+    # Detalhe do que falta pagar
     st.markdown("### 📋 Detalhe do que falta pagar")
-    if not df_pendente.empty:
-        # Mostra apenas colunas úteis
-        cols_uteis = [c for c in ["Data", "Cliente", "Carro", "Placa", "Total", "Valor comissao"] if c in df_pendente.columns]
-        st.dataframe(df_pendente[cols_uteis], use_container_width=True)
-        
-        st.write("")
-        if st.button("✅ Pagar Comissões e Baixar"):
-            sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
-            header = ws.row_values(1)
-            col_idx = -1
-            for idx, h in enumerate(header):
-                if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
-            
-            if col_idx > 0:
-                count = 0
-                for i, linha in enumerate(dados):
-                    v = converter_valor(linha.get("Valor Comissao", "0"))
-                    if v > 0 and str(linha.get("Status Comissao", "")) != "Pago":
-                        ws.update_cell(i + 2, col_idx, "Pago")
-                        count += 1
-                st.success(f"{count} comissões pagas com sucesso!"); t_sleep.sleep(2); st.rerun()
-    else:
-        st.info("Nenhuma comissão pendente.")
+    if not df_v.empty:
+        df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
+        df_p["Comissão (40%)"] = df_p["Total"] * 0.40
+        df_p["Total"] = df_p["Total"].apply(formatar_moeda)
+        df_p["Comissão (40%)"] = df_p["Comissão (40%)"].apply(formatar_moeda)
+        st.dataframe(df_p, use_container_width=True, hide_index=True)
+    
+    col_pay, col_pdf = st.columns([1, 2])
+    with col_pay:
+        if comissao_pendente > 0:
+            if st.button("✅ Pagar Todas Comissões"):
+                sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records()
+                header = ws.row_values(1)
+                col_idx = -1
+                for idx, h in enumerate(header):
+                    if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
+                if col_idx > 0:
+                    for i, linha in enumerate(dados):
+                        v = converter_valor(linha.get("Valor Comissao", "0"))
+                        if v > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
+                    st.success("Pago!"); t_sleep.sleep(1); st.rerun()
+    
+    with col_pdf:
+        # NOVO: BOTÃO DE RELATÓRIO MENSAL
+        if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
+            resumo = {
+                "mes": datetime.now().strftime("%m/%Y"),
+                "faturamento": total_bruto,
+                "despesas": total_despesas,
+                "comissoes": total_bruto * 0.40, # Estimativa baseada no bruto concluído
+                "lucro": lucro_liq_real
+            }
+            pdf_bytes = gerar_relatorio_mensal(df_mes, resumo)
+            st.download_button("📥 Download PDF", pdf_bytes, f"Relatorio_{resumo['mes'].replace('/','_')}.pdf", "application/pdf")
 
 def page_agendamento():
     st.markdown('## <i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada', unsafe_allow_html=True)
@@ -513,7 +558,7 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # CORREÇÃO: ADICIONEI unsafe_allow_html=True para o ícone
     df = carregar_dados("Vendas")
     if not df.empty:
         busca = st.text_input("🔍 Buscar...").strip().lower()
