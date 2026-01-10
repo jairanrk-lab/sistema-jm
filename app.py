@@ -6,6 +6,7 @@ from fpdf import FPDF
 import gspread
 import os
 import time as t_sleep
+import re  # ADICIONADO PARA LIMPAR NÚMEROS
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
@@ -95,6 +96,11 @@ st.markdown("""
 def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def limpar_numero(num):
+    """Remove parenteses, traços e espaços para o link do WhatsApp funcionar"""
+    if not num: return ""
+    return re.sub(r'\D', '', str(num))
+
 def conectar_google_sheets():
     # ID FIXO QUE VOCÊ CONFIRMOU
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
@@ -104,13 +110,13 @@ def conectar_google_sheets():
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
             ID_FIXO = st.secrets["app"]["spreadsheet_id"]
             
-        # Tenta autenticar (AQUI GERALMENTE É O ERRO)
+        # Tenta autenticar
         if os.path.exists("chave_google.json"): 
             client = gspread.service_account(filename="chave_google.json")
         elif "gcp_service_account" in st.secrets:
             client = gspread.service_account_from_dict(dict(st.secrets["gcp_service_account"]))
         else:
-            st.error("🚨 ERRO CRÍTICO: Não encontrei as credenciais (chave_google.json ou Secrets). O sistema não consegue entrar no Google.")
+            st.error("🚨 ERRO CRÍTICO: Não encontrei as credenciais.")
             return None
 
         # Tenta abrir a planilha
@@ -127,7 +133,7 @@ def carregar_dados(aba):
     try: 
         return pd.DataFrame(sheet.worksheet(aba).get_all_records())
     except gspread.WorksheetNotFound:
-        st.error(f"🚨 ERRO: A aba '{aba}' não foi encontrada na planilha. Verifique o nome (maiúsculas/minúsculas).")
+        st.error(f"🚨 ERRO: A aba '{aba}' não foi encontrada.")
         return pd.DataFrame()
     except Exception as e:
         st.error(f"🚨 Erro ao ler aba '{aba}': {e}")
@@ -194,7 +200,7 @@ def obter_icone_html(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>'
     else: return '<i class="bi bi-car-front-fill"></i>'
 
-# --- FUNÇÃO DE BUSCA DE CLIENTE (AUTO-COMPLETE) ---
+# --- FUNÇÃO DE BUSCA DE CLIENTE (CORRIGIDA) ---
 def buscar_cliente_por_placa(placa_busca):
     # Procura nas abas de Agendamentos e Vendas
     df_a = carregar_dados("Agendamentos")
@@ -208,19 +214,32 @@ def buscar_cliente_por_placa(placa_busca):
     # Limpa a placa para comparar (sem traço, maiusculo)
     placa_busca = placa_busca.replace("-", "").strip().upper()
     
-    # Filtra
-    if "Placa" in df_completo.columns:
-        df_completo['Placa'] = df_completo['Placa'].astype(str)
-        res = df_completo[df_completo['Placa'].str.replace("-", "").str.strip().str.upper() == placa_busca]
+    # Normaliza colunas para evitar erro de Maiuscula/Minuscula na planilha
+    cols_map = {c.lower(): c for c in df_completo.columns}
+    
+    col_placa = cols_map.get("placa")
+    
+    if col_placa:
+        df_completo[col_placa] = df_completo[col_placa].astype(str)
+        res = df_completo[df_completo[col_placa].str.replace("-", "").str.strip().str.upper() == placa_busca]
         
         if not res.empty:
-            # Pega o último registro (mais recente)
             ultimo = res.iloc[-1]
+            
+            # Tenta achar o telefone em qualquer variação de nome
+            col_tel = cols_map.get("telefone") or cols_map.get("celular") or cols_map.get("whatsapp")
+            telefone_encontrado = str(ultimo.get(col_tel, "")) if col_tel else ""
+            
+            # Tenta achar cliente e veiculo
+            col_cli = cols_map.get("cliente", "Cliente")
+            col_veic = cols_map.get("veiculo") or cols_map.get("carro") or "Veiculo"
+            col_cat = cols_map.get("categoria", "Categoria")
+
             return {
-                "Cliente": ultimo.get("Cliente", ""),
-                "Telefone": str(ultimo.get("Telefone", "")),
-                "Veiculo": ultimo.get("Veiculo", "") if "Veiculo" in ultimo else ultimo.get("Carro", ""),
-                "Categoria": ultimo.get("Categoria", "")
+                "Cliente": ultimo.get(col_cli, ""),
+                "Telefone": telefone_encontrado,
+                "Veiculo": ultimo.get(col_veic, ""),
+                "Categoria": ultimo.get(col_cat, "")
             }
     return None
 
@@ -462,8 +481,10 @@ def page_agendamento():
                         if ok: 
                             st.success("Agendado!"); 
                             if zap:
+                                # LIMPA O NÚMERO ANTES DE GERAR O LINK
+                                zap_limpo = limpar_numero(zap)
                                 msg_zap = f"Olá {cli}, agendamento confirmado na JM Detail!%0A🚗 {veic}%0A📅 {dt.strftime('%d/%m/%Y')} às {hr}%0A💰 Total: {formatar_moeda(total)}"
-                                link = f"https://wa.me/55{zap}?text={msg_zap}"
+                                link = f"https://wa.me/55{zap_limpo}?text={msg_zap}"
                                 st.markdown(f'<a href="{link}" target="_blank"><button style="background:#25D366;color:white;border:none;padding:10px;border-radius:5px;width:100%">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                         else: st.error(msg)
                     
@@ -505,10 +526,16 @@ def page_agendamento():
                         excluir_agendamento(i)
                         st.rerun()
                 with c_btn2:
-                    # --- BOTÃO WHATSAPP CARRO PRONTO ---
-                    if r.get("Telefone"):
+                    # --- BOTÃO WHATSAPP CARRO PRONTO (CORRIGIDO) ---
+                    # 1. Tenta pegar o telefone da linha
+                    tel_cliente = str(r.get("Telefone", ""))
+                    
+                    # 2. Limpa o número para garantir que o link funcione
+                    tel_limpo = limpar_numero(tel_cliente)
+                    
+                    if tel_limpo:
                         msg_pronto = f"Olá {r['Cliente']}! Seu {r['Veiculo']} já está pronto aqui na JM Detail. ✨ Ficou top! Valor Total: {formatar_moeda(float(r['Total']))}. Pode vir buscar!"
-                        link_pronto = f"https://wa.me/55{r['Telefone']}?text={msg_pronto}"
+                        link_pronto = f"https://wa.me/55{tel_limpo}?text={msg_pronto}"
                         st.markdown(f'<a href="{link_pronto}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
                     else:
                         st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
