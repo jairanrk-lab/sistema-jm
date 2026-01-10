@@ -155,7 +155,20 @@ def carregar_catalogo():
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
-    return pd.DataFrame() # Retorna vazio se falhar, o sistema vai tratar
+    
+    # Backup
+    return pd.DataFrame({
+        "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
+        "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
+        "Lavagem Técnica": [150.0, 170.0, 190.0, 210.0, 230.0, 100.0],
+        "Higi. Bancos": [80.0, 80.0, 80.0, 120.0, 150.0, 0.0], 
+        "Higi. Interna (Teto/Carpete)": [150.0, 150.0, 180.0, 200.0, 250.0, 0.0],
+        "Combo Premium": [300.0, 320.0, 350.0, 400.0, 450.0, 0.0],
+        "Limpeza Motor": [100.0, 100.0, 120.0, 150.0, 150.0, 80.0],
+        "Faróis": [200.0, 200.0, 200.0, 200.0, 200.0, 100.0],
+        "Cristalização Vidros": [90.0, 120.0, 150.0, 150.0, 150.0, 50.0],
+        "Vitrificação": [800.0, 900.0, 1100.0, 1300.0, 1300.0, 500.0]
+    })
 
 def obter_icone_html(cat):
     if not isinstance(cat, str): return '<i class="bi bi-car-front-fill"></i>'
@@ -180,19 +193,19 @@ def buscar_cliente_por_placa(placa_busca):
     placa_busca = placa_busca.replace("-", "").strip().upper()
     
     # Filtra
-    # Garante que a coluna Placa seja string
-    df_completo['Placa'] = df_completo['Placa'].astype(str)
-    res = df_completo[df_completo['Placa'].str.replace("-", "").str.strip().str.upper() == placa_busca]
-    
-    if not res.empty:
-        # Pega o último registro (mais recente)
-        ultimo = res.iloc[-1]
-        return {
-            "Cliente": ultimo.get("Cliente", ""),
-            "Telefone": ultimo.get("Telefone", ""), # Tenta pegar telefone se tiver
-            "Veiculo": ultimo.get("Veiculo", "") if "Veiculo" in ultimo else ultimo.get("Carro", ""),
-            "Categoria": ultimo.get("Categoria", "")
-        }
+    if "Placa" in df_completo.columns:
+        df_completo['Placa'] = df_completo['Placa'].astype(str)
+        res = df_completo[df_completo['Placa'].str.replace("-", "").str.strip().str.upper() == placa_busca]
+        
+        if not res.empty:
+            # Pega o último registro (mais recente)
+            ultimo = res.iloc[-1]
+            return {
+                "Cliente": ultimo.get("Cliente", ""),
+                "Telefone": str(ultimo.get("Telefone", "")),
+                "Veiculo": ultimo.get("Veiculo", "") if "Veiculo" in ultimo else ultimo.get("Carro", ""),
+                "Categoria": ultimo.get("Categoria", "")
+            }
     return None
 
 def gerar_pdf_orcamento(dados):
@@ -202,34 +215,40 @@ def gerar_pdf_orcamento(dados):
     logo_file = None
     if os.path.exists("logo.png"): logo_file = "logo.png"
     elif os.path.exists("Logo.png"): logo_file = "Logo.png"
+    elif os.path.exists("LOGO.png"): logo_file = "LOGO.png"
+    
     if logo_file: pdf.image(logo_file, x=10, y=8, w=30)
     
+    def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
+
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "JM DETAIL - ORÇAMENTO", ln=True, align='C')
+    pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
     pdf.set_font("Arial", size=10)
-    pdf.cell(0, 10, "Estética Automotiva Premium | (75) 99830-3753", ln=True, align='C')
+    pdf.cell(0, 10, txt("Estética Automotiva Premium | (75) 99830-3753"), ln=True, align='C')
     pdf.ln(10)
     
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, f"CLIENTE: {dados['Cliente']}", ln=True)
-    pdf.cell(0, 10, f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}", ln=True)
-    pdf.cell(0, 10, f"DATA: {dados['Data']}", ln=True)
+    pdf.cell(0, 10, txt(f"CLIENTE: {dados['Cliente']}"), ln=True)
+    pdf.cell(0, 10, txt(f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
+    pdf.cell(0, 10, txt(f"DATA: {dados['Data']}"), ln=True)
     pdf.ln(5)
     
-    pdf.set_fill_color(200, 200, 200)
-    pdf.cell(140, 10, "Descrição do Serviço", 1, 0, 'L', 1)
-    pdf.cell(50, 10, "Valor", 1, 1, 'C', 1)
+    pdf.set_fill_color(220, 220, 220)
+    pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1)
+    pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
     
     pdf.set_font("Arial", size=12)
     servicos = dados['Servicos'].split(',')
     # Adiciona serviços principais
     for s in servicos:
         if s.strip():
-            pdf.cell(140, 10, s.strip(), 1)
-            pdf.cell(50, 10, "-", 1, 1, 'C') # Detalhar preço por item é complexo sem map, mostra total
+            pdf.cell(140, 10, txt(s.strip()), 1)
+            pdf.cell(50, 10, "-", 1, 1, 'C') 
             
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 14)
     pdf.cell(140, 10, "TOTAL ESTIMADO", 1, 0, 'R')
-    pdf.cell(50, 10, f"R$ {dados['Total']:.2f}", 1, 1, 'C')
+    pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
     
     return pdf.output(dest="S").encode("latin-1")
 
