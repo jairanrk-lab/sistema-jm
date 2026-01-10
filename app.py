@@ -16,16 +16,13 @@ st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", 
 # --- 2. SISTEMA DE LOGIN PERSISTENTE ---
 # ==============================================================================
 def check_password():
-    # Verifica se já está logado na sessão ou pela URL (truque para persistir no F5)
     if st.session_state.get("password_correct", False):
         return True
     
-    # Se tiver o parâmetro "logado=true" na URL, libera o acesso
     if st.query_params.get("logado") == "true":
         st.session_state["password_correct"] = True
         return True
 
-    # Tenta liberar acesso mestre antigo (compatibilidade)
     try:
         if st.query_params.get("acesso_liberado") == "sim_mestre":
             return True
@@ -44,7 +41,6 @@ def check_password():
                 
                 if pwd == senha_correta: 
                     st.session_state["password_correct"] = True
-                    # Adiciona parâmetro na URL para manter logado ao atualizar
                     st.query_params["logado"] = "true"
                     st.rerun()
                 else: st.error("Senha incorreta.")
@@ -341,9 +337,12 @@ def page_dashboard():
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
-            base = alt.Chart(df_mes).encode(x=alt.X('Data', title=None, axis=alt.Axis(labelColor='white')))
-            bars = base.mark_bar(size=30, cornerRadiusEnd=5).encode(y=alt.Y('Total', axis=None), color=alt.Color('Status', scale=alt.Scale(domain=['Concluído', 'Orçamento/Pendente'], range=['#00F260', '#FF0080']), legend=None), tooltip=['Data', 'Cliente', 'Carro', 'Total'])
-            st.altair_chart(bars.properties(height=300, background='transparent'), use_container_width=True)
+            # --- ATUALIZAÇÃO DO GRÁFICO (SUGESTÃO DO OUTRO MENTOR) ---
+            base = alt.Chart(df_mes).encode(x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m')))
+            bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(y=alt.Y('Total:Q', title=None), color=alt.value('#39FF14'), tooltip=['Data', 'Cliente', 'Carro', alt.Tooltip('Total:Q', format=',.2f')])
+            linha = base.mark_line(strokeWidth=3, color='#00B4DB', point=alt.OverlayMarkDef(filled=True, size=80)).encode(y='Total:Q')
+            chart = (bars + linha).properties(height=320, background='transparent')
+            st.altair_chart(chart, use_container_width=True)
         else: st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
@@ -398,7 +397,9 @@ def page_agendamento():
                 dados_cli = buscar_cliente_por_placa(placa_input)
                 if dados_cli:
                     st.success(f"Cliente Encontrado: {dados_cli['Cliente']}")
-                    val_cli = dados_cli['Cliente']; val_veic = dados_cli['Veiculo']; val_zap = dados_cli['Telefone']
+                    val_cli = dados_cli['Cliente']
+                    val_veic = dados_cli['Veiculo']
+                    val_zap = dados_cli.get("Telefone", "")
                     cats_lista = df_cat["Categoria"].tolist() if not df_cat.empty else []
                     if dados_cli['Categoria'] in cats_lista: val_cat_idx = cats_lista.index(dados_cli['Categoria'])
                 else:
@@ -487,7 +488,7 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # CORREÇÃO: ADICIONEI unsafe_allow_html=True para o ícone
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
     if not df.empty:
         busca = st.text_input("🔍 Buscar...").strip().lower()
