@@ -73,6 +73,8 @@ st.markdown("""
     .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
     .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
     .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
+    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; } /* NOVO: Cor Ouro */
+    
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
@@ -149,6 +151,7 @@ def carregar_catalogo():
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
+    
     return pd.DataFrame({
         "Categoria": ["Hatch/Compacto", "Sedã", "SUV/Caminhonete", "Picapes Grandes", "Vans/Utilitários", "Motocicleta"],
         "Lavagem Simples": [40.0, 50.0, 60.0, 70.0, 80.0, 30.0],
@@ -200,7 +203,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF ORÇAMENTO ---
+# --- PDF ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -252,7 +255,6 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
-# --- NOVO: GERADOR DE RELATÓRIO MENSAL (PDF) ---
 def gerar_relatorio_mensal(df_mes, resumo):
     pdf = FPDF()
     pdf.add_page()
@@ -351,10 +353,10 @@ def page_dashboard():
     st.markdown(f'<div style="background-color: #161616; padding: 10px 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
-    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
-    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Mês Atual</small></div>', unsafe_allow_html=True)
+    with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
     c3, c4 = st.columns(2)
-    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos</small></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
     with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
 
     st.write("---")
@@ -442,13 +444,13 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
-        # NOVO: BOTÃO DE RELATÓRIO MENSAL
+        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
                 "faturamento": total_bruto,
                 "despesas": total_despesas,
-                "comissoes": total_bruto * 0.40, # Estimativa baseada no bruto concluído
+                "comissoes": total_bruto * 0.40,
                 "lucro": lucro_liq_real
             }
             pdf_bytes = gerar_relatorio_mensal(df_mes, resumo)
@@ -558,9 +560,28 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # CORREÇÃO: ADICIONEI unsafe_allow_html=True para o ícone
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # ÍCONE CORRIGIDO
     df = carregar_dados("Vendas")
     if not df.empty:
+        # --- NOVO: RANKING VIP (TOP 5 CLIENTES) ---
+        df["Total_Num"] = df["Total"].apply(converter_valor)
+        ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
+        
+        st.markdown("### 🏆 Ranking VIP (Top 5)")
+        col_rank = st.columns(len(ranking))
+        for idx, (i, r) in enumerate(ranking.iterrows()):
+            medalha = "🥇" if idx==0 else "🥈" if idx==1 else "🥉" if idx==2 else f"{idx+1}º"
+            cor = "bg-gold" if idx==0 else ""
+            st.markdown(f"""
+            <div class="dash-card {cor}" style="height:100px; padding:10px; margin-bottom:10px">
+                <div style="font-size:20px">{medalha}</div>
+                <div style="font-weight:bold; font-size:14px">{r['Cliente']}</div>
+                <div style="font-size:12px">{formatar_moeda(r['Total_Num'])}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.write("---")
+
+        # Lista Padrão
         busca = st.text_input("🔍 Buscar...").strip().lower()
         df_f = df.iloc[::-1]
         if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
