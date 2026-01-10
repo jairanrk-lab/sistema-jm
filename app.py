@@ -311,7 +311,6 @@ def page_dashboard():
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     
-    # Título com Ícone Original
     st.markdown(f'## <i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel Geral <small style="font-size:14px; color:#888">| {nome_meses[mes_atual]}/{ano_atual}</small>', unsafe_allow_html=True)
     
     df_v = carregar_dados("Vendas")
@@ -321,6 +320,7 @@ def page_dashboard():
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
     lucro_recalculado = 0.0
     
+    # --- 1. CÁLCULOS FINANCEIROS ---
     if not df_v.empty:
         # Limpeza robusta da coluna Total
         for c in ["Total"]:
@@ -330,12 +330,8 @@ def page_dashboard():
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], format='%d/%m/%Y', errors='coerce')
         df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
         
-        # Receita Bruta (Soma dos Totais Concluídos)
         receita_mes = df_mes[df_mes["Status"]=="Concluído"]["Total"].sum()
-        
-        # Lucro Operacional
         lucro_operacional = receita_mes * 0.50
-        
         pendente_total = df_v[df_v["Status"]=="Orçamento/Pendente"]["Total"].sum()
         count_p = len(df_v[df_v["Status"]=="Orçamento/Pendente"])
 
@@ -346,6 +342,33 @@ def page_dashboard():
     
     lucro_final = lucro_operacional - despesa_mes
     
+    # --- 2. BARRA DE META MENSAL (COMPACTA) ---
+    META_MENSAL = 5000.00 # <--- SUA META
+    
+    if META_MENSAL > 0:
+        pct_real = (receita_mes / META_MENSAL) * 100
+        # Trava visual em 100% para não quebrar o layout, mas mostra o número real
+        largura_visual = min(pct_real, 100.0)
+        
+        # Cor do texto muda se a barra estiver muito cheia para dar contraste
+        cor_texto = "white"
+        shadow = "text-shadow: 1px 1px 2px black;"
+        
+        st.markdown(f"""
+        <div style="background-color: #161616; padding: 10px 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;">
+                <span>🎯 META: {formatar_moeda(META_MENSAL)}</span>
+                <span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span>
+            </div>
+            <div style="width:100%; background-color:#333; border-radius:15px; height:22px;">
+                <div style="width:{largura_visual}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);">
+                    <span style="color:{cor_texto}; font-weight:bold; font-size:12px; {shadow}">{pct_real:.1f}%</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- 3. CARDS E GRÁFICOS ---
     c1, c2 = st.columns(2)
     with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
     with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
