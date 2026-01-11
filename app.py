@@ -46,7 +46,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "APPLE NATIVE" (FONTE E INPUTS REFINADOS) ---
+# --- 3. ESTILO CSS (VERSÃO ESTÁVEL 16.21 - APPLE NATIVE) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -483,6 +483,7 @@ def page_financeiro():
 
     st.write("---")
     
+    # Detalhe do que falta pagar
     st.markdown("### 📋 Detalhe do que falta pagar")
     if not df_v.empty:
         df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
@@ -577,7 +578,7 @@ def page_agendamento():
                             # CORREÇÃO ZAP: FORMATO LISTA E R$
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
                     # PASSAMOS AGORA A LISTA DETALHADA
@@ -607,8 +608,8 @@ def page_agendamento():
                             # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
-                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
                     if st.button("🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i); st.rerun()
