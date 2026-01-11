@@ -613,6 +613,18 @@ def page_agendamento():
 
 def page_vistoria():
     st.markdown('## <i class="bi bi-camera-fill" style="color: #39FF14;"></i> Vistoria de Entrada (Cautelar)', unsafe_allow_html=True)
+    
+    # --- CSS ESPECÍFICO PARA O UPLOAD FICAR BONITO ---
+    st.markdown("""
+    <style>
+        /* Estiliza a área de upload para parecer um botão grande */
+        [data-testid="stFileUploader"] {
+            padding: 10px; border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; text-align: center;
+        }
+        [data-testid="stFileUploader"] section { background-color: rgba(30,30,30,0.5); }
+    </style>
+    """, unsafe_allow_html=True)
+
     with st.container(border=True):
         c_placa, c_buscar = st.columns([3, 1]); placa_input = c_placa.text_input("Buscar Placa ou Digitar Nova", key="placa_vistoria")
         v_cli, v_veic, v_comb = "", "", 50
@@ -634,20 +646,21 @@ def page_vistoria():
         pertences = st.text_area("Pertences no Veículo (Opcional)", placeholder="Ex: Óculos, Pen Drive, Cadeirinha de bebê...")
         
         st.write("---")
-        st.markdown("### 2. Registro Fotográfico (6 Slots)")
+        st.markdown("### 2. Registro Fotográfico (Câmera ou Galeria)")
+        st.info("💡 Dica: No celular, clique em 'Browse files' e escolha **'Câmera'** para tirar a foto na hora (Traseira) ou **'Arquivos'** para enviar uma colagem.")
         
-        # Grid de 6 Câmeras
+        # Grid de 6 Uploaders (Substituindo a Camera Input travada)
         col_a, col_b = st.columns(2)
-        img_frente = col_a.camera_input("1. Frente")
-        img_tras = col_b.camera_input("2. Traseira")
+        img_frente = col_a.file_uploader("1. Frente", type=["jpg", "png", "jpeg"], key="up_frente")
+        img_tras = col_b.file_uploader("2. Traseira", type=["jpg", "png", "jpeg"], key="up_tras")
         
         col_c, col_d = st.columns(2)
-        img_lat_e = col_c.camera_input("3. Lateral Esq.")
-        img_lat_d = col_d.camera_input("4. Lateral Dir.")
+        img_lat_e = col_c.file_uploader("3. Lateral Esq.", type=["jpg", "png", "jpeg"], key="up_lat_e")
+        img_lat_d = col_d.file_uploader("4. Lateral Dir.", type=["jpg", "png", "jpeg"], key="up_lat_d")
         
         col_e, col_f = st.columns(2)
-        img_det1 = col_e.camera_input("5. Detalhe 1")
-        img_det2 = col_f.camera_input("6. Detalhe 2")
+        img_det1 = col_e.file_uploader("5. Detalhe / Colagem 1", type=["jpg", "png", "jpeg"], key="up_det1")
+        img_det2 = col_f.file_uploader("6. Detalhe / Colagem 2", type=["jpg", "png", "jpeg"], key="up_det2")
         
         st.write("---")
         if st.button("📄 GERAR TERMO DE VISTORIA (PDF)", use_container_width=True):
@@ -684,7 +697,6 @@ def page_vistoria():
                     # Limpeza
                     for p in temp_paths.values():
                         if os.path.exists(p): os.remove(p)
-
 def page_despesas():
     st.markdown('## <i class="bi bi-receipt" style="color: #D90429;"></i> Despesas', unsafe_allow_html=True)
     with st.form("form_desp"):
