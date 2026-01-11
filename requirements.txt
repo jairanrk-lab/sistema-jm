@@ -1,6 +1,7 @@
 streamlit
 pandas
-gspread
-fpdf
-altair
 plotly
+altair
+fpdf
+gspread
+google-auth
