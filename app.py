@@ -46,16 +46,13 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "APPLE NATIVE" (FONTE E INPUTS REFINADOS) ---
+# --- 3. ESTILO CSS "APPLE NATIVE + PRO BUTTONS" ---
 # ==============================================================================
 st.markdown("""
 <style>
-    /* FONTE NATIVA (San Francisco no iPhone / Segoe UI no Windows) */
+    /* FONTE NATIVA */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
-    
-    * { 
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important; 
-    }
+    * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
     
     /* FUNDO GERAL */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
@@ -64,88 +61,73 @@ st.markdown("""
     }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
-    
-    /* ESCONDER MARCAS DO STREAMLIT (PRO LOOK) */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    #MainMenu, footer {visibility: hidden;}
 
-    /* INPUTS "GLASS" (Caixas de Texto Transparentes) */
+    /* INPUTS "GLASS" */
     input[type="text"], input[type="number"], input[type="date"], input[type="time"], .stSelectbox > div > div, .stMultiSelect > div > div {
         background-color: rgba(30, 30, 30, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border-radius: 10px !important;
+        color: white !important; border-radius: 10px !important;
         backdrop-filter: blur(5px) !important;
     }
-    /* Quando clica no input */
-    .stTextInput > div > div[data-baseweb="input"]:focus-within {
-        border-color: #D90429 !important;
-        box-shadow: 0 0 0 1px #D90429 !important;
-    }
+    .stTextInput > div > div[data-baseweb="input"]:focus-within { border-color: #D90429 !important; box-shadow: 0 0 0 1px #D90429 !important; }
 
-    /* MENU SUPERIOR EM BLOCOS (GLASS) */
-    div[role="radiogroup"] {
-        display: flex !important; flex-direction: row !important; width: 100% !important;
-        justify-content: space-between !important; background-color: transparent !important;
-        border: none !important; padding: 0 !important; gap: 8px !important;
-    }
+    /* MENU SUPERIOR (GLASS) */
+    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background: transparent !important; border: none !important; padding: 0 !important; gap: 8px !important; }
     div[role="radiogroup"] label {
-        flex: 1 !important; 
-        background-color: rgba(30, 30, 30, 0.4) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 12px 2px !important; border-radius: 12px !important; transition: all 0.2s ease !important;
-        margin: 0 !important; color: #aaa !important; font-weight: 500 !important;
-        font-size: 14px !important; white-space: nowrap !important; display: flex;
-        align-items: center; justify-content: center !important;
+        flex: 1 !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 12px 2px !important; border-radius: 12px !important;
+        margin: 0 !important; color: #aaa !important; font-weight: 500 !important; font-size: 14px !important;
+        display: flex; align-items: center; justify-content: center !important; transition: all 0.2s ease !important;
     }
-    /* Ícones do Menu */
+    div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: rgba(217, 4, 41, 0.15) !important; }
+    div[role="radiogroup"] label[data-checked="true"] { 
+        background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
+        backdrop-filter: blur(12px) !important; color: white !important; border-color: rgba(255,255,255,0.2) !important; 
+        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; font-weight: 700 !important;
+    }
+    /* Ícones Menu */
     div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 6px; font-size: 16px; }
     div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 6px; font-size: 16px; }
     div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 6px; font-size: 16px; }
     div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 6px; font-size: 16px; }
     div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 6px; font-size: 16px; }
 
-    div[role="radiogroup"] label:hover { 
-        border-color: #D90429 !important; color: white !important; 
-        background-color: rgba(217, 4, 41, 0.15) !important; 
-    }
-    div[role="radiogroup"] label[data-checked="true"] { 
-        background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
-        backdrop-filter: blur(12px) !important;
-        color: white !important; border-color: rgba(255,255,255,0.2) !important; 
-        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; 
-        font-weight: 700 !important;
-    }
-    
     /* CARDS */
     .dash-card { 
-        border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; 
-        position: relative; overflow: hidden; height: 140px !important; 
-        display: flex; flex-direction: column; justify-content: center; 
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; height: 140px !important; 
+        display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }
     .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.1 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
-    
     .bg-orange { background: linear-gradient(135deg, rgba(255, 152, 0, 0.3), rgba(245, 124, 0, 0.1)); border-top: 1px solid rgba(255, 152, 0, 0.5); }
     .bg-blue   { background: linear-gradient(135deg, rgba(0, 180, 219, 0.3), rgba(0, 131, 176, 0.1)); border-top: 1px solid rgba(0, 180, 219, 0.5); }
     .bg-red    { background: linear-gradient(135deg, rgba(217, 4, 41, 0.3), rgba(141, 2, 31, 0.1)); border-top: 1px solid rgba(217, 4, 41, 0.5); }
     .bg-green  { background: linear-gradient(135deg, rgba(17, 153, 142, 0.3), rgba(56, 239, 125, 0.1)); border-top: 1px solid rgba(56, 239, 125, 0.5); }
     .bg-gold   { background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(184, 134, 11, 0.1)); color: #FFD700 !important; border-top: 1px solid rgba(255, 215, 0, 0.5); }
     
-    /* CARDS LISTA */
     .agenda-card, .history-card { 
-        background-color: rgba(22, 22, 22, 0.6) !important; 
-        backdrop-filter: blur(12px) !important;
-        border-radius: 16px; padding: 15px; margin-bottom: 12px; 
-        border: 1px solid rgba(255, 255, 255, 0.08); 
+        background-color: rgba(22, 22, 22, 0.6) !important; backdrop-filter: blur(12px) !important;
+        border-radius: 16px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.08); 
     }
     .agenda-card { border-left: 5px solid #00B4DB; }
     .history-card { border-left: 5px solid #28a745; }
 
-    /* FOOTER */
+    /* NOVO: BOTÃO WHATSAPP "GLASS" */
+    .btn-zap {
+        background: linear-gradient(135deg, rgba(37, 211, 102, 0.4), rgba(18, 140, 126, 0.2)) !important;
+        border: 1px solid rgba(37, 211, 102, 0.5) !important;
+        color: white !important; cursor: pointer;
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        width: 100%; border-radius: 10px; height: 45px; font-weight: 600; font-size: 14px;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        transition: all 0.3s ease;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .btn-zap:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(37, 211, 102, 0.3); background: rgba(37, 211, 102, 0.5) !important; }
+    .btn-zap i { font-size: 18px; }
+
+    /* FOOTER & NATIVE BUTTONS */
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
     div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 10px !important; font-weight: 700 !important; border: none !important; height: 45px !important; box-shadow: 0 4px 10px rgba(217, 4, 41, 0.3); }
 </style>
@@ -469,12 +451,14 @@ def page_financeiro():
         
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
 
+    # Processa Despesas Mês Atual
     if not df_d.empty:
         df_d.columns = [c.strip().capitalize() for c in df_d.columns]
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
         if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
 
+    # Cards
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
@@ -483,6 +467,7 @@ def page_financeiro():
 
     st.write("---")
     
+    # Detalhe do que falta pagar
     st.markdown("### 📋 Detalhe do que falta pagar")
     if not df_v.empty:
         df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
@@ -507,6 +492,7 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
+        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
@@ -574,10 +560,10 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
-                            # CORREÇÃO ZAP: FORMATO LISTA E R$
+                            # CORREÇÃO ZAP: FORMATO HTML COM CSS CLASS
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank" style="text-decoration:none;"><div class="btn-zap"><i class="bi bi-whatsapp"></i> ENVIAR NO WHATSAPP</div></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
                     # PASSAMOS AGORA A LISTA DETALHADA
@@ -607,7 +593,8 @@ def page_agendamento():
                             # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                            # LINK COM CLASSE CSS btn-zap (Reduzido para caber no card)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank" style="text-decoration:none;"><div class="btn-zap" style="height:45px; font-size:12px;"><i class="bi bi-whatsapp"></i> AVISAR</div></a>', unsafe_allow_html=True)
                     else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
                     if st.button("🗑️", key=f"del_{i}", use_container_width=True):
