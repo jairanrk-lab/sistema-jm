@@ -11,8 +11,7 @@ import urllib.parse
 import base64 # NOVO: Necessário para o ícone
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
-
+st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", ...
 # --- NOVO: FUNÇÕES PARA FORÇAR O ÍCONE NO IPHONE ---
 def get_base64_encoded_image(image_path):
     with open(image_path, "rb") as img_file:
