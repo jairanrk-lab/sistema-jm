@@ -356,6 +356,48 @@ st.write("---")
 # --- PÁGINAS ---
 
 def page_dashboard():
+    # --- 🧪 MODO DE TESTE: GERADOR DE DADOS (TEMPORÁRIO) ---
+    st.warning("⚠️ MODO DE TESTE ATIVO: Botão de Gerar Dados Visível")
+    if st.button("🧪 GERAR 15 VENDAS FICTÍCIAS (JANEIRO/26)"):
+        import random
+        from datetime import timedelta
+        
+        carros_test = ["Porsche 911", "BMW 320i", "Hilux GR", "Corolla", "Ferrari Roma", "Fiat Toro", "Audi Q5", "Civic Si"]
+        servicos_test = ["Vitrificação", "Lavagem Detalhada", "Polimento", "Higienização", "Full Detail"]
+        
+        status_box = st.empty()
+        status_box.info("Gerando dados... aguarde.")
+        
+        # Gerar 15 vendas aleatórias entre dia 01 e 20 de Janeiro
+        for i in range(1, 16):
+            dia = random.randint(1, 28) # Datas variadas
+            valor = random.choice([150, 350, 500, 800, 1200, 2500, 4000]) # Valores variados para a curva oscilar
+            carro = random.choice(carros_test)
+            
+            # Monta a venda fake
+            venda_fake = {
+                "Data": f"{dia:02d}/01/2026",
+                "Cliente": f"Cliente Teste Visual {i}",
+                "Telefone": "75999999999",
+                "Carro": carro,
+                "Placa": f"TST-{random.randint(1000,9999)}",
+                "Serviços": random.choice(servicos_test),
+                "Total": valor,
+                "Status": "Concluído",
+                "Funcionario": "Eu Mesmo",
+                "Valor Comissao": 0,
+                "Fundo Caixa": valor * 0.10,
+                "Lucro Liquido": valor * 0.90,
+                "Status Comissao": "Pendente",
+                "Categoria": "Teste"
+            }
+            # Salva na planilha "Vendas" usando sua função existente
+            salvar_no_google("Vendas", venda_fake)
+            
+        status_box.success("✅ 15 Vendas Geradas! Atualizando gráfico...")
+        t_sleep.sleep(2)
+        st.rerun()
+    # -------------------------------------------------------
     hoje = datetime.now()
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
