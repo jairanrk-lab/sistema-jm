@@ -639,28 +639,48 @@ def page_vistoria():
         veic = c2.text_input("Modelo do Veículo", value=v_veic)
         
         st.write("---")
-        st.markdown("### 1. Estado Geral")
+        st.markdown("### 1. Estado Geral & Avarias")
         combustivel = st.slider("Nível de Combustível (%)", 0, 100, 50, step=5)
-        avarias = st.multiselect("Marcar Avarias Visíveis:", 
-            ["Risco Lat. Esquerda", "Risco Lat. Direita", "Risco Para-choque", "Amassado Porta", "Roda Ralada", "Vidro Trincado", "Farol Quebrado", "Interior Sujo/Manchado", "Teto Queimado"])
+        
+        # LISTA COMPLETA DE AVARIAS
+        lista_avarias = [
+            "Capô: Risco/Arranhão", "Capô: Amassado", "Capô: Pintura Queimada",
+            "Teto: Pintura Queimada", "Teto: Amassado (Granizo/Outros)",
+            "Para-brisa: Trincado/Estrela", "Vidros Laterais: Risco/Mancha",
+            "Para-choque Diant: Ralado/Quebrado", "Para-choque Tras: Ralado/Quebrado",
+            "Lateral Esq (Motorista): Risco", "Lateral Esq (Motorista): Amassado",
+            "Lateral Dir (Passageiro): Risco", "Lateral Dir (Passageiro): Amassado",
+            "Retrovisor Esq: Quebrado/Ralado", "Retrovisor Dir: Quebrado/Ralado",
+            "Faróis: Quebrados/Trincados", "Faróis: Amarelados/Foscos",
+            "Rodas/Calotas: Raladas (Meio-fio)", "Pneus: Carecas/Murchos",
+            "Interior: Banco Rasgado/Furado", "Interior: Teto Sujo/Descolando",
+            "Interior: Painel Riscado/Quebrado", "Manchas de Chuva Ácida (Geral)"
+        ]
+        
+        avarias = st.multiselect(
+            "Marcar Avarias Visíveis:", 
+            options=lista_avarias,
+            placeholder="Selecione as avarias na lista..."  # <--- TRADUÇÃO AQUI
+        )
+        
         pertences = st.text_area("Pertences no Veículo (Opcional)", placeholder="Ex: Óculos, Pen Drive, Cadeirinha de bebê...")
         
         st.write("---")
-        st.markdown("### 2. Registro Fotográfico (Câmera ou Galeria)")
-        st.info("💡 Dica: No celular, clique em 'Browse files' e escolha **'Câmera'** para tirar a foto na hora (Traseira) ou **'Arquivos'** para enviar uma colagem.")
+        st.markdown("### 2. Registro Fotográfico (Câmera Traseira/Galeria)")
+        st.info("💡 Dica: Clique em 'Browse files' e escolha **'Câmera'** (para usar a traseira) ou **'Arquivos'** (para colagens).")
         
-        # Grid de 6 Uploaders (Substituindo a Camera Input travada)
+        # Grid de 6 Uploaders
         col_a, col_b = st.columns(2)
-        img_frente = col_a.file_uploader("1. Frente", type=["jpg", "png", "jpeg"], key="up_frente")
-        img_tras = col_b.file_uploader("2. Traseira", type=["jpg", "png", "jpeg"], key="up_tras")
+        img_frente = col_a.file_uploader("1. Frente / Capô", type=["jpg", "png", "jpeg"], key="up_frente")
+        img_tras = col_b.file_uploader("2. Traseira / Porta-malas", type=["jpg", "png", "jpeg"], key="up_tras")
         
         col_c, col_d = st.columns(2)
-        img_lat_e = col_c.file_uploader("3. Lateral Esq.", type=["jpg", "png", "jpeg"], key="up_lat_e")
-        img_lat_d = col_d.file_uploader("4. Lateral Dir.", type=["jpg", "png", "jpeg"], key="up_lat_d")
+        img_lat_e = col_c.file_uploader("3. Lateral Esq. (Motorista)", type=["jpg", "png", "jpeg"], key="up_lat_e")
+        img_lat_d = col_d.file_uploader("4. Lateral Dir. (Passageiro)", type=["jpg", "png", "jpeg"], key="up_lat_d")
         
         col_e, col_f = st.columns(2)
-        img_det1 = col_e.file_uploader("5. Detalhe / Colagem 1", type=["jpg", "png", "jpeg"], key="up_det1")
-        img_det2 = col_f.file_uploader("6. Detalhe / Colagem 2", type=["jpg", "png", "jpeg"], key="up_det2")
+        img_det1 = col_e.file_uploader("5. Detalhe Teto / Avaria 1", type=["jpg", "png", "jpeg"], key="up_det1")
+        img_det2 = col_f.file_uploader("6. Detalhe Rodas / Avaria 2", type=["jpg", "png", "jpeg"], key="up_det2")
         
         st.write("---")
         if st.button("📄 GERAR TERMO DE VISTORIA (PDF)", use_container_width=True):
@@ -668,8 +688,8 @@ def page_vistoria():
                 st.error("Preencha o Nome e Veículo!")
             else:
                 fotos = {
-                    "Frente": img_frente, "Traseira": img_tras, 
-                    "Lateral Esq": img_lat_e, "Lateral Dir": img_lat_d,
+                    "Frente/Capô": img_frente, "Traseira": img_tras, 
+                    "Lat. Esquerda": img_lat_e, "Lat. Direita": img_lat_d,
                     "Detalhe 1": img_det1, "Detalhe 2": img_det2
                 }
                 
