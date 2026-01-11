@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import plotly.graph_objects as go  # <--- ADICIONADO PARA O GRÁFICO NOVO
 from datetime import datetime, date, time
 from fpdf import FPDF
 import gspread
@@ -367,6 +368,9 @@ def page_dashboard():
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
     lucro_operacional = 0.0
     
+    # Prepara df_mes para ser usado no gráfico
+    df_mes = pd.DataFrame() 
+
     if not df_v.empty:
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
         for c in ["Total"]:
@@ -404,14 +408,60 @@ def page_dashboard():
     col_graf, col_prox = st.columns([2, 1])
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
-        if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
-            neon_scale = alt.Scale(range=['#39FF14', '#1F51FF', '#BC13FE', '#FFFF00', '#FF00FF', '#FF5F00', '#00FFFF'])
-            base = alt.Chart(df_mes).encode(x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m')))
-            bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(y=alt.Y('Total:Q', title=None), color=alt.Color('Cliente', legend=None, scale=neon_scale), tooltip=['Data', 'Cliente', 'Carro', alt.Tooltip('Total:Q', format=',.2f')])
-            line = base.mark_line(strokeWidth=3, color='#FFFFFF').encode(y='sum(Total):Q') + base.mark_circle(size=80, color='#FFFFFF').encode(y='sum(Total):Q', tooltip=[alt.Tooltip('sum(Total):Q', format=',.2f', title='Total do Dia')])
-            chart = alt.layer(bars, line).properties(height=320, background='transparent')
-            st.altair_chart(chart, use_container_width=True)
-        else: st.info("Sem dados de vendas neste mês.")
+        if not df_mes.empty:
+            # --- 🚀 MUDANÇA: GRÁFICO GLASS STYLE (PLOTLY) COM DADOS REAIS ---
+            
+            # 1. Agrupar dados por dia (para o gráfico ficar coerente)
+            df_chart = df_mes.groupby(df_mes['Data_dt'].dt.date)['Total'].sum().reset_index()
+            df_chart.columns = ['Data', 'Faturamento']
+            df_chart = df_chart.sort_values('Data')
+
+            # 2. Criar a estrutura
+            fig = go.Figure()
+
+            # 3. Barras Fantasma (Volume)
+            fig.add_trace(go.Bar(
+                x=df_chart['Data'],
+                y=df_chart['Faturamento'],
+                marker_color='rgba(255, 255, 255, 0.08)', # Vidro fosco bem suave
+                showlegend=False,
+                hoverinfo='none'
+            ))
+
+            # 4. Linha Premium (Destaque Prata)
+            fig.add_trace(go.Scatter(
+                x=df_chart['Data'],
+                y=df_chart['Faturamento'],
+                mode='lines+markers',
+                line=dict(color='#E0E0E0', width=3, shape='spline'), # Linha curva e prata
+                marker=dict(size=6, color='#FFFFFF', line=dict(width=1, color='#000000')),
+                showlegend=False,
+                hovertemplate='Dia %{x|%d/%m}<br><b>R$ %{y:,.2f}</b><extra></extra>'
+            ))
+
+            # 5. Layout Limpo (Glass)
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=10, r=10, t=10, b=10),
+                height=320,
+                xaxis=dict(
+                    showgrid=False, 
+                    tickformat='%d/%m', 
+                    tickfont=dict(color='#888'),
+                    linecolor='rgba(255,255,255,0.2)'
+                ),
+                yaxis=dict(
+                    showgrid=True, 
+                    gridcolor='rgba(255,255,255,0.05)', 
+                    tickfont=dict(color='#888'),
+                    zeroline=False
+                )
+            )
+
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
