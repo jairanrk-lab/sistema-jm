@@ -8,34 +8,34 @@ import os
 import time as t_sleep
 import re 
 import urllib.parse
-import base64 # NOVO: Necessário para o ícone
+import base64
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", ...
-# --- NOVO: FUNÇÕES PARA FORÇAR O ÍCONE NO IPHONE ---
+# --- FUNÇÕES PARA FORÇAR O ÍCONE NO IPHONE (Injeção de Cabeçalho) ---
 def get_base64_encoded_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode('utf-8')
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    except: return None
 
 def set_apple_touch_icon(image_path):
     try:
-        # Tenta encontrar o logo nas variações de nome
-        logo_file = next((f for f in [image_path, "logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
-        if logo_file:
-            img_base64 = get_base64_encoded_image(logo_file)
+        img_base64 = get_base64_encoded_image(image_path)
+        if img_base64:
             img_src = f"data:image/png;base64,{img_base64}"
-            # Injeta as tags que o iPhone procura
+            # Injeta as tags específicas que o iOS procura
             st.markdown(f"""
                 <head>
                     <link rel="apple-touch-icon" href="{img_src}">
                     <link rel="shortcut icon" href="{img_src}">
-                    <meta name="apple-mobile-web-app-title" content="JM Detail">
-                    <meta name="apple-mobile-web-app-capable" content="yes">
                 </head>
             """, unsafe_allow_html=True)
     except: pass
 
-# Chama a função logo no início para tentar definir o ícone
+# --- 1. CONFIGURAÇÃO DA PÁGINA (AQUI ESTÁ A MUDANÇA PRINCIPAL) ---
+# Trocamos o emoji "💎" pelo arquivo "icone_app.png" para forçar o sistema a usar a imagem
+st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", layout="wide", initial_sidebar_state="collapsed")
+
+# Chama a função de reforço para iOS
 set_apple_touch_icon("icone_app.png")
 
 # ==============================================================================
@@ -99,7 +99,7 @@ st.markdown("""
     .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
     .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
     .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
-    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; } 
+    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; }
     
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
@@ -409,20 +409,17 @@ def page_financeiro():
     
     comissao_pendente = 0.0; fundo_caixa = 0.0; total_bruto = 0.0; total_despesas = 0.0
     
-    # Processa Vendas
     if not df_v.empty:
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
         if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
         for c in ["Total", "Valor comissao", "Fundo caixa"]:
             if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
         
-        # Filtra Mês Atual para Relatório
         df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
         hoje = datetime.now()
         df_mes = df_v[(df_v['Data_dt'].dt.month == hoje.month) & (df_v['Data_dt'].dt.year == hoje.year)]
         total_bruto = df_mes[df_mes["Status"].str.strip()=="Concluído"]["Total"].sum()
         
-        # Comissões Pendentes (Geral)
         df_pendente = df_v[df_v["Status comissao"] != "Pago"]
         for index, row in df_pendente.iterrows():
              if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")):
@@ -430,14 +427,12 @@ def page_financeiro():
         
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
 
-    # Processa Despesas Mês Atual
     if not df_d.empty:
         df_d.columns = [c.strip().capitalize() for c in df_d.columns]
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
         if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
 
-    # Cards
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
@@ -446,7 +441,6 @@ def page_financeiro():
 
     st.write("---")
     
-    # Detalhe do que falta pagar
     st.markdown("### 📋 Detalhe do que falta pagar")
     if not df_v.empty:
         df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
@@ -471,7 +465,6 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
-        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
@@ -512,13 +505,11 @@ def page_agendamento():
             dt = c4.date_input("Data", value=date.today()); hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
             cat = st.selectbox("Categoria:", df_cat["Categoria"], index=val_cat_idx)
-            # CORREÇÃO: REMOVE "TELEFONE" DA LISTA DE SERVIÇOS
             servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c not in ["Categoria", "Telefone", "telefone", "Obs"]])
             ce1, ce2, ce3 = st.columns(3)
             ext = ce1.number_input("Valor Extra", min_value=0.0); desc = ce2.number_input("Desconto", min_value=0.0); qm = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
             if servs:
-                # Prepara itens com valores para PDF e Cálculo
                 itens_calc = []
                 total = 0.0
                 for s in servs:
@@ -539,13 +530,11 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
-                            # CORREÇÃO ZAP: FORMATO LISTA E R$
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
-                    # PASSAMOS AGORA A LISTA DETALHADA
                     d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_calc, "Total": total}
                     st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento(d_pdf), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
 
@@ -554,7 +543,6 @@ def page_agendamento():
         if df_a.empty: st.info("Vazio.")
         else:
             for i, r in df_a.iterrows():
-                # BLINDAGEM NO CARD DE AGENDA
                 val_total = converter_valor(r.get('Total', 0))
                 st.markdown(f'<div class="agenda-card"><div style="display:flex; justify-content:space-between;"><b>{r["Data"]} {r["Hora"]}</b><b style="color:#39FF14">{formatar_moeda(val_total)}</b></div><div style="font-size:18px"><b>{obter_icone_html(r.get("Categoria",""))} {r["Veiculo"]}</b> ({r["Placa"]})</div><div>{r["Cliente"]}</div><div style="color:#888">🔧 {r["Servicos"]}</div></div>', unsafe_allow_html=True)
                 c_ok, c_zap, c_del = st.columns([2, 1, 1])
@@ -569,7 +557,6 @@ def page_agendamento():
                         z_clean = limpar_numero(r.get("Telefone"))
                         if z_clean:
                             val_fmt = formatar_moeda(converter_valor(r.get('Total', 0)))
-                            # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
@@ -587,10 +574,9 @@ def page_despesas():
             st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True) # ÍCONE CORRIGIDO
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
     if not df.empty:
-        # --- NOVO: RANKING VIP (TOP 5 CLIENTES) ---
         df["Total_Num"] = df["Total"].apply(converter_valor)
         ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
         
@@ -608,7 +594,6 @@ def page_historico():
             """, unsafe_allow_html=True)
         st.write("---")
 
-        # Lista Padrão
         busca = st.text_input("🔍 Buscar...").strip().lower()
         df_f = df.iloc[::-1]
         if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
