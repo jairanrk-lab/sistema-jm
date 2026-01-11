@@ -508,6 +508,7 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
+        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
@@ -578,7 +579,7 @@ def page_agendamento():
                             # CORREÇÃO ZAP: FORMATO LISTA E R$
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
                     # PASSAMOS AGORA A LISTA DETALHADA
@@ -608,8 +609,8 @@ def page_agendamento():
                             # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
-                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
                     if st.button("🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i); st.rerun()
@@ -626,20 +627,32 @@ def page_historico():
     st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
     if not df.empty:
-        # --- NOVO: RANKING VIP (TOP 5 CLIENTES) ---
+        # --- NOVO: RANKING VIP (ÍCONES PREMIUM) ---
         df["Total_Num"] = df["Total"].apply(converter_valor)
         ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
         
         st.markdown("### 🏆 Ranking VIP (Top 5)")
         col_rank = st.columns(len(ranking))
         for idx, (i, r) in enumerate(ranking.iterrows()):
-            medalha = "🥇" if idx==0 else "🥈" if idx==1 else "🥉" if idx==2 else f"{idx+1}º"
-            cor = "bg-gold" if idx==0 else ""
+            # LÓGICA DE ÍCONES (BOOTSTRAP ICONS)
+            if idx == 0:
+                icon_html = '<i class="bi bi-crown-fill" style="font-size: 2rem; color: #FFD700;"></i>' # Ouro (Coroa)
+                cor_card = "bg-gold"
+            elif idx == 1:
+                icon_html = '<i class="bi bi-trophy-fill" style="font-size: 1.5rem; color: #C0C0C0;"></i>' # Prata (Troféu)
+                cor_card = ""
+            elif idx == 2:
+                icon_html = '<i class="bi bi-trophy-fill" style="font-size: 1.5rem; color: #CD7F32;"></i>' # Bronze (Troféu)
+                cor_card = ""
+            else:
+                icon_html = f'<span style="font-size: 1.2rem; font-weight: bold;">#{idx+1}</span>' # Número Simples
+                cor_card = ""
+
             st.markdown(f"""
-            <div class="dash-card {cor}" style="height:100px; padding:10px; margin-bottom:10px">
-                <div style="font-size:20px">{medalha}</div>
-                <div style="font-weight:bold; font-size:14px">{r['Cliente']}</div>
-                <div style="font-size:12px">{formatar_moeda(r['Total_Num'])}</div>
+            <div class="dash-card {cor_card}" style="height:110px; padding:10px; margin-bottom:10px; text-align:center;">
+                <div style="margin-bottom: 5px;">{icon_html}</div>
+                <div style="font-weight:bold; font-size:13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{r['Cliente']}</div>
+                <div style="font-size:11px; opacity: 0.8;">{formatar_moeda(r['Total_Num'])}</div>
             </div>
             """, unsafe_allow_html=True)
         st.write("---")
