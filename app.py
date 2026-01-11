@@ -9,7 +9,7 @@ import time as t_sleep
 import re 
 import urllib.parse
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA (VOLTAMOS PARA O DIAMANTE 💎) ---
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
@@ -46,39 +46,89 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (VISUAL PREMIUM MANTIDO) ---
+# --- 3. ESTILO CSS "APPLE GLASS" (MODO VIDRO ATIVADO) ---
 # ==============================================================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
+    
     * { font-family: 'Poppins', sans-serif !important; }
-    [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { background-color: #000000 !important; }
+    
+    /* Fundo Geral */
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
+        background-color: #000000 !important; 
+        background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 70%);
+    }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
 
-    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background-color: transparent !important; border: none !important; padding: 0 !important; gap: 12px !important; }
-    div[role="radiogroup"] label { flex: 1 !important; background-color: #111 !important; border: 1px solid #333 !important; padding: 12px 5px !important; border-radius: 8px !important; transition: all 0.3s ease !important; margin: 0 !important; color: #888 !important; font-weight: 600 !important; font-size: 16px !important; white-space: nowrap !important; display: flex; align-items: center; justify-content: center !important; }
+    /* MENU SUPERIOR EM BLOCOS (GLASS) */
+    div[role="radiogroup"] {
+        display: flex !important; flex-direction: row !important; width: 100% !important;
+        justify-content: space-between !important; background-color: transparent !important;
+        border: none !important; padding: 0 !important; gap: 12px !important;
+    }
+    div[role="radiogroup"] label {
+        flex: 1 !important; 
+        background-color: rgba(30, 30, 30, 0.4) !important; /* Transparencia */
+        backdrop-filter: blur(10px) !important; /* Desfoque Vidro */
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Borda Fina */
+        padding: 12px 5px !important; border-radius: 12px !important; transition: all 0.3s ease !important;
+        margin: 0 !important; color: #aaa !important; font-weight: 600 !important;
+        font-size: 16px !important; white-space: nowrap !important; display: flex;
+        align-items: center; justify-content: center !important;
+    }
     div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 8px; font-size: 18px; }
     div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 8px; font-size: 18px; }
-    div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: #1a1a1a !important; transform: translateY(-2px); }
-    div[role="radiogroup"] label[data-checked="true"] { background: linear-gradient(90deg, #D90429 0%, #8D021F 100%) !important; color: white !important; border-color: #D90429 !important; box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important; }
+
+    div[role="radiogroup"] label:hover { 
+        border-color: #D90429 !important; color: white !important; 
+        background-color: rgba(217, 4, 41, 0.15) !important; 
+        transform: translateY(-2px); 
+    }
+    div[role="radiogroup"] label[data-checked="true"] { 
+        background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
+        backdrop-filter: blur(12px) !important;
+        color: white !important; border-color: rgba(255,255,255,0.2) !important; 
+        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; 
+    }
     
-    .dash-card { border-radius: 15px; padding: 20px; color: white; margin-bottom: 20px; border: 1px solid #333; position: relative; overflow: hidden; height: 140px !important; display: flex; flex-direction: column; justify-content: center; }
-    .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.15 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
-    .bg-orange { background: linear-gradient(145deg, #FF9800, #F57C00); }
-    .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
-    .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
-    .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
-    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; } 
+    /* CARDS ESTILO APPLE GLASS */
+    .dash-card { 
+        border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; 
+        position: relative; overflow: hidden; height: 140px !important; 
+        display: flex; flex-direction: column; justify-content: center; 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+    .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.1 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
     
-    .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
-    .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: #000000; color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
-    div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 8px !important; font-weight: 700 !important; border: none !important; height: 45px !important; }
+    /* Cores translúcidas para o efeito vidro */
+    .bg-orange { background: linear-gradient(135deg, rgba(255, 152, 0, 0.3), rgba(245, 124, 0, 0.1)); border-top: 1px solid rgba(255, 152, 0, 0.5); }
+    .bg-blue   { background: linear-gradient(135deg, rgba(0, 180, 219, 0.3), rgba(0, 131, 176, 0.1)); border-top: 1px solid rgba(0, 180, 219, 0.5); }
+    .bg-red    { background: linear-gradient(135deg, rgba(217, 4, 41, 0.3), rgba(141, 2, 31, 0.1)); border-top: 1px solid rgba(217, 4, 41, 0.5); }
+    .bg-green  { background: linear-gradient(135deg, rgba(17, 153, 142, 0.3), rgba(56, 239, 125, 0.1)); border-top: 1px solid rgba(56, 239, 125, 0.5); }
+    .bg-gold   { background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(184, 134, 11, 0.1)); color: #FFD700 !important; border-top: 1px solid rgba(255, 215, 0, 0.5); }
+    
+    /* CARDS DE LISTA (AGENDA/HISTORICO) - Vidro Escuro */
+    .agenda-card, .history-card { 
+        background-color: rgba(22, 22, 22, 0.6) !important; 
+        backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px; padding: 15px; margin-bottom: 12px; 
+        border: 1px solid rgba(255, 255, 255, 0.08); 
+    }
+    .agenda-card { border-left: 5px solid #00B4DB; }
+    .history-card { border-left: 5px solid #28a745; }
+
+    /* FOOTER */
+    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
+    div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 10px !important; font-weight: 700 !important; border: none !important; height: 45px !important; box-shadow: 0 4px 10px rgba(217, 4, 41, 0.3); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -203,7 +253,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF ORÇAMENTO ---
+# --- PDF ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -255,7 +305,6 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
-# --- PDF RELATÓRIO MENSAL ---
 def gerar_relatorio_mensal(df_mes, resumo):
     pdf = FPDF()
     pdf.add_page()
@@ -351,7 +400,7 @@ def page_dashboard():
     META = 5000.00 
     pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
     
-    st.markdown(f'<div style="background-color: #161616; padding: 10px 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
