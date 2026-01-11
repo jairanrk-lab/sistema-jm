@@ -8,31 +8,9 @@ import os
 import time as t_sleep
 import re 
 import urllib.parse
-import base64
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", layout="wide", initial_sidebar_state="collapsed")
-
-# --- FUNÇÃO NOVA: ÍCONE VIA LINK (PARA IPHONE) ---
-def set_apple_touch_icon_from_url(image_url):
-    try:
-        st.markdown(f"""
-            <head>
-                <link rel="apple-touch-icon" href="{image_url}">
-                <link rel="shortcut icon" href="{image_url}">
-                <meta name="apple-mobile-web-app-title" content="JM Detail">
-                <meta name="apple-mobile-web-app-capable" content="yes">
-                <meta name="apple-mobile-web-app-status-bar-style" content="black">
-            </head>
-        """, unsafe_allow_html=True)
-    except: pass
-
-# ==============================================================================
-# LINK EXATO DA SUA IMAGEM NO GITHUB (JÁ CONFIGUREI PRA VOCÊ)
-# ==============================================================================
-URL_DO_ICONE = "https://raw.githubusercontent.com/jairanrk-lab/sistema-jm/main/icone_app.png"
-
-set_apple_touch_icon_from_url(URL_DO_ICONE)
+# --- 1. CONFIGURAÇÃO DA PÁGINA (VOLTAMOS PARA O DIAMANTE 💎) ---
+st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
 # --- 2. SISTEMA DE LOGIN PERSISTENTE ---
