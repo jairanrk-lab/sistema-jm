@@ -336,7 +336,7 @@ def gerar_pdf_vistoria(dados, fotos_paths):
     col = 0
     for titulo, path in fotos_paths.items():
         if path and os.path.exists(path):
-            if y_start + h_img > 270: # Nova página se não couber
+            if y_start + h_img > 250: # Nova página se não couber
                 pdf.add_page(); y_start = 20
             
             x = x_start + (col * 95)
@@ -348,12 +348,32 @@ def gerar_pdf_vistoria(dados, fotos_paths):
             col += 1
             if col > 1:
                 col = 0; y_start += h_img + 10
-                
-    pdf.set_y(-30)
+    
+    # --- ÁREA DE ASSINATURA CORRIGIDA (LADO A LADO) ---
+    pdf.set_y(-35)
     pdf.set_font("Arial", size=8)
     pdf.cell(0, 5, txt("Declaro estar ciente do estado do veículo conforme vistoria acima."), ln=True, align='C')
-    pdf.cell(0, 10, "__________________________________________________", ln=True, align='C')
-    pdf.cell(0, 5, txt("Assinatura do Cliente / Responsável"), ln=True, align='C')
+    pdf.ln(5)
+    
+    # Posição Y das linhas
+    y_base = pdf.get_y()
+    
+    # LADO ESQUERDO: JM DETAIL (VISTORIADOR)
+    sig_file = next((f for f in ["assinatura.png", "Assinatura.png"] if os.path.exists(f)), None)
+    if sig_file:
+        # Coloca a imagem da assinatura um pouco acima da linha
+        pdf.image(sig_file, x=30, y=y_base, w=35)
+    
+    # Desenha as linhas
+    pdf.line(20, y_base + 15, 90, y_base + 15)   # Linha Esquerda
+    pdf.line(120, y_base + 15, 190, y_base + 15) # Linha Direita
+    
+    # Textos abaixo das linhas
+    pdf.set_xy(20, y_base + 16)
+    pdf.cell(70, 5, txt("Vistoriador (JM Detail)"), 0, 0, 'C')
+    
+    pdf.set_xy(120, y_base + 16)
+    pdf.cell(70, 5, txt("Cliente / Responsável"), 0, 0, 'C')
 
     return pdf.output(dest="S").encode("latin-1")
 
@@ -370,6 +390,8 @@ def gerar_relatorio_mensal(df_mes, resumo):
     pdf.set_font("Arial", size=10)
     pdf.cell(0, 10, txt(f"Período: {resumo['mes']}"), ln=True, align='C')
     pdf.ln(10)
+    
+    # Resumo Financeiro
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, txt("RESUMO FINANCEIRO"), ln=True)
     pdf.set_font("Arial", size=12)
@@ -379,12 +401,15 @@ def gerar_relatorio_mensal(df_mes, resumo):
     pdf.set_font("Arial", "B", 12)
     pdf.cell(100, 10, txt("LUCRO LÍQUIDO FINAL:"), 0); pdf.cell(0, 10, txt(formatar_moeda(resumo['lucro'])), 0, 1)
     pdf.ln(10)
+    
+    # Tabela de Serviços
     pdf.set_font("Arial", "B", 10)
     pdf.set_fill_color(200, 200, 200)
     pdf.cell(30, 8, "DATA", 1, 0, 'C', 1)
     pdf.cell(60, 8, "CLIENTE", 1, 0, 'L', 1)
     pdf.cell(60, 8, "VEÍCULO", 1, 0, 'L', 1)
     pdf.cell(40, 8, "VALOR", 1, 1, 'C', 1)
+    
     pdf.set_font("Arial", size=9)
     for _, r in df_mes.iterrows():
         dt = r['Data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['Data_dt']) else str(r['Data'])
@@ -393,6 +418,7 @@ def gerar_relatorio_mensal(df_mes, resumo):
         pdf.cell(60, 7, txt(str(r['Cliente'])[:25]), 1, 0, 'L')
         pdf.cell(60, 7, txt(str(r['Carro'])[:25]), 1, 0, 'L')
         pdf.cell(40, 7, txt(val), 1, 1, 'C')
+        
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
