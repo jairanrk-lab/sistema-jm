@@ -10,33 +10,30 @@ import re
 import urllib.parse
 import base64
 
-# --- FUNÇÕES PARA FORÇAR O ÍCONE NO IPHONE (Injeção de Cabeçalho) ---
-def get_base64_encoded_image(image_path):
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-    except: return None
-
-def set_apple_touch_icon(image_path):
-    try:
-        img_base64 = get_base64_encoded_image(image_path)
-        if img_base64:
-            img_src = f"data:image/png;base64,{img_base64}"
-            # Injeta as tags específicas que o iOS procura
-            st.markdown(f"""
-                <head>
-                    <link rel="apple-touch-icon" href="{img_src}">
-                    <link rel="shortcut icon" href="{img_src}">
-                </head>
-            """, unsafe_allow_html=True)
-    except: pass
-
-# --- 1. CONFIGURAÇÃO DA PÁGINA (AQUI ESTÁ A MUDANÇA PRINCIPAL) ---
-# Trocamos o emoji "💎" pelo arquivo "icone_app.png" para forçar o sistema a usar a imagem
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
+# Mantemos o icone local para o PC, mas agora o Streamlit vai tentar ler o arquivo se ele existir
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", layout="wide", initial_sidebar_state="collapsed")
 
-# Chama a função de reforço para iOS
-set_apple_touch_icon("icone_app.png")
+# --- FUNÇÃO NOVA: ÍCONE VIA LINK (PARA IPHONE) ---
+def set_apple_touch_icon_from_url(image_url):
+    try:
+        st.markdown(f"""
+            <head>
+                <link rel="apple-touch-icon" href="{image_url}">
+                <link rel="shortcut icon" href="{image_url}">
+                <meta name="apple-mobile-web-app-title" content="JM Detail">
+                <meta name="apple-mobile-web-app-capable" content="yes">
+                <meta name="apple-mobile-web-app-status-bar-style" content="black">
+            </head>
+        """, unsafe_allow_html=True)
+    except: pass
+
+# ==============================================================================
+# LINK DIRETO DA SUA IMAGEM NO GITHUB (Já configurei pra você)
+# ==============================================================================
+URL_DO_ICONE = "https://raw.githubusercontent.com/jairanrk-lab/sistema-jm/main/icone_app.png"
+
+set_apple_touch_icon_from_url(URL_DO_ICONE)
 
 # ==============================================================================
 # --- 2. SISTEMA DE LOGIN PERSISTENTE ---
@@ -99,7 +96,7 @@ st.markdown("""
     .bg-blue { background: linear-gradient(145deg, #00B4DB, #0083B0); }
     .bg-red { background: linear-gradient(145deg, #D90429, #8D021F); }
     .bg-green { background: linear-gradient(145deg, #11998e, #38ef7d); }
-    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; }
+    .bg-gold { background: linear-gradient(145deg, #FFD700, #B8860B); color: black !important; } 
     
     .agenda-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; border-left: 5px solid #00B4DB; }
     .history-card { background-color: #161616 !important; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
@@ -229,7 +226,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF ORÇAMENTO ---
+# --- PDF ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -281,7 +278,6 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
-# --- PDF RELATÓRIO MENSAL ---
 def gerar_relatorio_mensal(df_mes, resumo):
     pdf = FPDF()
     pdf.add_page()
