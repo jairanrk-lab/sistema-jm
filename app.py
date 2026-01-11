@@ -11,7 +11,6 @@ import urllib.parse
 import base64
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
-# Mantemos o icone local para o PC, mas agora o Streamlit vai tentar ler o arquivo se ele existir
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="icone_app.png", layout="wide", initial_sidebar_state="collapsed")
 
 # --- FUNÇÃO NOVA: ÍCONE VIA LINK (PARA IPHONE) ---
@@ -29,7 +28,7 @@ def set_apple_touch_icon_from_url(image_url):
     except: pass
 
 # ==============================================================================
-# LINK DIRETO DA SUA IMAGEM NO GITHUB (Já configurei pra você)
+# LINK EXATO DA SUA IMAGEM NO GITHUB (JÁ CONFIGUREI PRA VOCÊ)
 # ==============================================================================
 URL_DO_ICONE = "https://raw.githubusercontent.com/jairanrk-lab/sistema-jm/main/icone_app.png"
 
@@ -226,7 +225,7 @@ def buscar_cliente_por_placa(placa_busca):
             }
     return None
 
-# --- PDF ---
+# --- PDF ORÇAMENTO ---
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
@@ -278,6 +277,7 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
+# --- PDF RELATÓRIO MENSAL ---
 def gerar_relatorio_mensal(df_mes, resumo):
     pdf = FPDF()
     pdf.add_page()
