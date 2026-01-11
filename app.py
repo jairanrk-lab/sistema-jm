@@ -46,7 +46,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "APPLE NATIVE + PRO BUTTONS" ---
+# --- 3. ESTILO CSS (CORREÇÃO DE LAYOUT + GLASS) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -72,26 +72,42 @@ st.markdown("""
     }
     .stTextInput > div > div[data-baseweb="input"]:focus-within { border-color: #D90429 !important; box-shadow: 0 0 0 1px #D90429 !important; }
 
-    /* MENU SUPERIOR (GLASS) */
-    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background: transparent !important; border: none !important; padding: 0 !important; gap: 8px !important; }
-    div[role="radiogroup"] label {
-        flex: 1 !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 12px 2px !important; border-radius: 12px !important;
-        margin: 0 !important; color: #aaa !important; font-weight: 500 !important; font-size: 14px !important;
-        display: flex; align-items: center; justify-content: center !important; transition: all 0.2s ease !important;
+    /* MENU SUPERIOR (CORRIGIDO PARA NÃO QUEBRAR) */
+    div[role="radiogroup"] { 
+        display: flex !important; width: 100% !important; 
+        justify-content: space-between !important; 
+        background: transparent !important; border: none !important; 
+        padding: 0 !important; gap: 5px !important; 
     }
+    div[role="radiogroup"] label {
+        flex: 1 !important; 
+        background-color: rgba(30, 30, 30, 0.4) !important; 
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+        padding: 10px 0px !important; /* Menos padding lateral para caber */
+        border-radius: 10px !important;
+        margin: 0 !important; color: #aaa !important; 
+        font-weight: 500 !important; font-size: 13px !important; /* Fonte levemente menor */
+        display: flex; align-items: center; justify-content: center !important; 
+        white-space: nowrap !important; /* O SEGREDO: NÃO QUEBRA LINHA */
+        transition: all 0.2s ease !important;
+    }
+    /* Tenta esconder a bolinha do radio (Hack CSS) */
+    div[role="radiogroup"] label > div:first-child { display: none !important; }
+
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: rgba(217, 4, 41, 0.15) !important; }
     div[role="radiogroup"] label[data-checked="true"] { 
         background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
         backdrop-filter: blur(12px) !important; color: white !important; border-color: rgba(255,255,255,0.2) !important; 
         box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; font-weight: 700 !important;
     }
+    
     /* Ícones Menu */
-    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 6px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 6px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 6px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 6px; font-size: 16px; }
-    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 6px; font-size: 16px; }
+    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 4px; font-size: 14px; }
+    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 4px; font-size: 14px; }
+    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 4px; font-size: 14px; }
+    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 4px; font-size: 14px; }
+    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 4px; font-size: 14px; }
 
     /* CARDS */
     .dash-card { 
@@ -113,7 +129,7 @@ st.markdown("""
     .agenda-card { border-left: 5px solid #00B4DB; }
     .history-card { border-left: 5px solid #28a745; }
 
-    /* NOVO: BOTÃO WHATSAPP "GLASS" */
+    /* BOTÃO WHATSAPP "GLASS" */
     .btn-zap {
         background: linear-gradient(135deg, rgba(37, 211, 102, 0.4), rgba(18, 140, 126, 0.2)) !important;
         border: 1px solid rgba(37, 211, 102, 0.5) !important;
@@ -121,8 +137,7 @@ st.markdown("""
         backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         width: 100%; border-radius: 10px; height: 45px; font-weight: 600; font-size: 14px;
         display: flex; align-items: center; justify-content: center; gap: 8px;
-        transition: all 0.3s ease;
-        text-transform: uppercase; letter-spacing: 0.5px;
+        transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;
     }
     .btn-zap:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(37, 211, 102, 0.3); background: rgba(37, 211, 102, 0.5) !important; }
     .btn-zap i { font-size: 18px; }
@@ -451,14 +466,12 @@ def page_financeiro():
         
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
 
-    # Processa Despesas Mês Atual
     if not df_d.empty:
         df_d.columns = [c.strip().capitalize() for c in df_d.columns]
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
         if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
 
-    # Cards
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
@@ -492,7 +505,6 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
-        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
