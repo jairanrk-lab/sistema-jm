@@ -47,19 +47,19 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (CORRIGIDO PARA O BUG DA SETINHA) ---
+# --- 3. ESTILO CSS (CORRIGIDO CIRURGICAMENTE) ---
 # ==============================================================================
 st.markdown("""
 <style>
     /* FONTE NATIVA */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
-    /* CORREÇÃO DO BUG 'KEYBOARD_ARROW_DOWN' */
-    /* Em vez de usar * (tudo), aplicamos a fonte apenas em elementos de texto */
-    html, body, p, div, h1, h2, h3, h4, h5, h6, span, input, button, select, textarea, label { 
+    /* CORREÇÃO DO BUG DA SETINHA (EXPANDER) */
+    /* Aplicamos a fonte APENAS em elementos de texto, preservando os ícones do Streamlit */
+    html, body, p, div, h1, h2, h3, h4, h5, h6, span, input, button, select, textarea, label, li, a, .stTextInput, .stNumberInput, .stSelectbox { 
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; 
     }
-    
+
     /* FUNDO GERAL COM GRADIENTE PROFUNDO */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important; 
@@ -123,7 +123,7 @@ st.markdown("""
         border-radius: 16px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.08); 
     }
     
-    /* BADGES PARA OS CARDS */
+    /* BADGES PARA OS CARDS (MANTIDO) */
     .badge-cat { padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-right: 5px; }
     .b-moto { background-color: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.4); }
     .b-carro { background-color: rgba(0, 180, 219, 0.2); color: #00b4db; border: 1px solid rgba(0, 180, 219, 0.4); }
@@ -164,7 +164,7 @@ def conectar_google_sheets():
         else: return None
         return client.open_by_key(ID_FIXO)
     except Exception as e:
-        # LOG DE ERRO VISIVEL AGORA
+        # LOG DE ERRO VISIVEL
         st.error(f"Erro na Conexão com Google Sheets: {e}")
         return None
 
@@ -174,7 +174,7 @@ def carregar_dados(aba):
     try: 
         return pd.DataFrame(sheet.worksheet(aba).get_all_records())
     except Exception as e:
-        # LOG DE ERRO VISIVEL AGORA
+        # LOG DE ERRO VISIVEL
         if "WorksheetNotFound" in str(e):
             st.warning(f"A aba '{aba}' não foi encontrada na planilha. Crie-a no Google Sheets.")
         else:
