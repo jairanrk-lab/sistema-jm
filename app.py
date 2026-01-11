@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.graph_objects as go  # <--- ADICIONADO PARA O GRÁFICO NOVO
-from datetime import datetime, date, time
+import plotly.graph_objects as go
+from datetime import datetime, date, time, timedelta
 from fpdf import FPDF
 import gspread
 import os
@@ -342,7 +342,7 @@ def gerar_relatorio_mensal(df_mes, resumo):
 # ==============================================================================
 # --- CABEÇALHO ---
 # ==============================================================================
-c_logo1, c_logo2, c_logo3 = st.columns([1,3,1]) # Logo maior para o efeito aparecer
+c_logo1, c_logo2, c_logo3 = st.columns([1,3,1])
 with c_logo2:
     logo_path = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
     if logo_path: st.image(logo_path, use_container_width=True)
@@ -356,7 +356,6 @@ st.write("---")
 # --- PÁGINAS ---
 
 def page_dashboard():
-   
     hoje = datetime.now()
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
@@ -369,7 +368,6 @@ def page_dashboard():
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
     lucro_operacional = 0.0
     
-    # Prepara df_mes para ser usado no gráfico
     df_mes = pd.DataFrame() 
 
     if not df_v.empty:
@@ -410,59 +408,30 @@ def page_dashboard():
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_mes.empty:
-            # --- 🚀 MUDANÇA: GRÁFICO GLASS STYLE (PLOTLY) COM DADOS REAIS ---
-            
-            # 1. Agrupar dados por dia (para o gráfico ficar coerente)
             df_chart = df_mes.groupby(df_mes['Data_dt'].dt.date)['Total'].sum().reset_index()
             df_chart.columns = ['Data', 'Faturamento']
             df_chart = df_chart.sort_values('Data')
 
-            # 2. Criar a estrutura
             fig = go.Figure()
-
-            # 3. Barras Fantasma (Volume)
             fig.add_trace(go.Bar(
-                x=df_chart['Data'],
-                y=df_chart['Faturamento'],
-                marker_color='rgba(255, 255, 255, 0.08)', # Vidro fosco bem suave
-                showlegend=False,
-                hoverinfo='none'
+                x=df_chart['Data'], y=df_chart['Faturamento'],
+                marker_color='rgba(255, 255, 255, 0.08)', showlegend=False, hoverinfo='none'
             ))
-
-            # 4. Linha Premium (Destaque Prata)
             fig.add_trace(go.Scatter(
-                x=df_chart['Data'],
-                y=df_chart['Faturamento'],
+                x=df_chart['Data'], y=df_chart['Faturamento'],
                 mode='lines+markers',
-                line=dict(color='#E0E0E0', width=3, shape='spline'), # Linha curva e prata
+                line=dict(color='#E0E0E0', width=3, shape='spline'), 
                 marker=dict(size=6, color='#FFFFFF', line=dict(width=1, color='#000000')),
-                showlegend=False,
-                hovertemplate='Dia %{x|%d/%m}<br><b>R$ %{y:,.2f}</b><extra></extra>'
+                showlegend=False, hovertemplate='Dia %{x|%d/%m}<br><b>R$ %{y:,.2f}</b><extra></extra>'
             ))
-
-            # 5. Layout Limpo (Glass)
             fig.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=320,
-                xaxis=dict(
-                    showgrid=False, 
-                    tickformat='%d/%m', 
-                    tickfont=dict(color='#888'),
-                    linecolor='rgba(255,255,255,0.2)'
-                ),
-                yaxis=dict(
-                    showgrid=True, 
-                    gridcolor='rgba(255,255,255,0.05)', 
-                    tickfont=dict(color='#888'),
-                    zeroline=False
-                )
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=10, r=10, t=10, b=10), height=320,
+                xaxis=dict(showgrid=False, tickformat='%d/%m', tickfont=dict(color='#888'), linecolor='rgba(255,255,255,0.2)'),
+                yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888'), zeroline=False)
             )
-
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-        else:
-            st.info("Sem dados de vendas neste mês.")
+        else: st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
@@ -481,6 +450,7 @@ def page_financeiro():
     df_v = carregar_dados("Vendas")
     df_d = carregar_dados("Despesas")
     comissao_pendente, fundo_caixa, total_bruto, total_despesas = 0.0, 0.0, 0.0, 0.0
+    
     if not df_v.empty:
         df_v.columns = [c.strip().capitalize() for c in df_v.columns]
         if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
@@ -494,24 +464,43 @@ def page_financeiro():
         for index, row in df_pendente.iterrows():
              if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")): comissao_pendente += (row["Total"] * 0.40)
         if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
+    
     if not df_d.empty:
         df_d.columns = [c.strip().capitalize() for c in df_d.columns]
         df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
         df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
         if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
+    
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
     lucro_liq_real = (total_bruto * 0.50) - total_despesas
     c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado tudo)</small></div>', unsafe_allow_html=True)
+    
     st.write("---")
     st.markdown("### 📋 Detalhe do que falta pagar")
     if not df_v.empty:
         df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
-        df_p["Comissão (40%)"] = df_p["Total"] * 0.40
-        df_p["Total"] = df_p["Total"].apply(formatar_moeda)
-        df_p["Comissão (40%)"] = df_p["Comissão (40%)"].apply(formatar_moeda)
-        st.dataframe(df_p, use_container_width=True, hide_index=True)
+        df_p["Comissão"] = df_p["Total"] * 0.40
+        
+        # --- NOVO VISUAL TABLE (BADGES) ---
+        st.dataframe(
+            df_p, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={
+                "Total": st.column_config.NumberColumn("Total", format="R$ %.2f"),
+                "Comissão": st.column_config.ProgressColumn(
+                    "Comissão (40%)", 
+                    help="Valor a pagar para a equipe", 
+                    format="R$ %.2f", 
+                    min_value=0, 
+                    max_value=1000
+                ),
+                "Data": st.column_config.TextColumn("Data", help="Data do serviço")
+            }
+        )
+    
     col_pay, col_pdf = st.columns([1, 2])
     with col_pay:
         if comissao_pendente > 0:
@@ -601,22 +590,61 @@ def page_despesas():
         if st.form_submit_button("Lançar"): salvar_no_google("Despesas", {"Data": datetime.now().strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val}); st.success("Salvo!")
 
 def page_historico():
-    st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
+    st.markdown('## <i class="bi bi-clock-history"></i> Histórico & CRM', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
+    
     if not df.empty:
-        df["Total_Num"] = df["Total"].apply(converter_valor); ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
+        # 1. PROCESSAMENTO DE DADOS
+        df["Total_Num"] = df["Total"].apply(converter_valor)
+        df['Data_dt'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
+        
+        # 2. CRM DE RETORNO (NOVIDADE)
+        st.markdown("### 🧠 Gestão de Retorno (CRM)")
+        with st.expander("Ver Clientes para Recontato", expanded=False):
+            hoje = pd.to_datetime(date.today())
+            
+            # Agrupar por cliente e pegar a última data
+            df_crm = df.groupby("Cliente").agg({'Data_dt': 'max', 'Telefone': 'first', 'Carro': 'first'}).reset_index()
+            df_crm["Dias sem vir"] = (hoje - df_crm["Data_dt"]).dt.days
+            
+            # Classificação Visual
+            def classificar_status(dias):
+                if dias <= 30: return "🟢 Recente"
+                elif dias <= 90: return "🟡 Atenção"
+                else: return "🔴 Inativo"
+            
+            df_crm["Status"] = df_crm["Dias sem vir"].apply(classificar_status)
+            df_crm = df_crm.sort_values(by="Dias sem vir", ascending=True)
+            
+            st.dataframe(
+                df_crm[["Cliente", "Status", "Dias sem vir", "Carro"]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Dias sem vir": st.column_config.NumberColumn("Dias Ausente", format="%d dias"),
+                    "Status": st.column_config.TextColumn("Status", help="Estado atual do cliente")
+                }
+            )
+
+        st.write("---")
+
+        # 3. RANKING E HISTÓRICO GERAL
+        ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
         st.markdown("### 🏆 Ranking VIP (Top 5)")
         col_rank = st.columns(len(ranking))
         for idx, (i, r) in enumerate(ranking.iterrows()):
             medalha, cor = ("🥇" if idx==0 else "🥈" if idx==1 else "🥉" if idx==2 else f"{idx+1}º"), ("bg-gold" if idx==0 else "")
             st.markdown(f'<div class="dash-card {cor}" style="height:100px; padding:10px; margin-bottom:10px"><div style="font-size:20px">{medalha}</div><div style="font-weight:bold; font-size:14px">{r["Cliente"]}</div><div style="font-size:12px">{formatar_moeda(r["Total_Num"])}</div></div>', unsafe_allow_html=True)
+        
         st.write("---")
-        busca = st.text_input("🔍 Buscar...").strip().lower(); df_f = df.iloc[::-1]
+        busca = st.text_input("🔍 Buscar no Histórico...").strip().lower()
+        df_f = df.iloc[::-1] # Inverte ordem
         if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
+        
         for _, r in df_f.iterrows():
             total_hist = formatar_moeda(converter_valor(r["Total"]))
-            st.markdown(f'<div class="history-card" style="border-left:5px solid #28a745"><div style="display:flex;justify-content:space-between;"><div><b>{r["Carro"]}</b><br>{r["Cliente"]} | {r["Placa"]}</div><div style="text-align:right"><b style="color:#39FF14">{total_hist}</b><br><small>{r["Data"]}</small></div></div><div style="color:#888">{r["Serviços"]}</div></div>', unsafe_allow_html=True)
-    else: st.info("Vazio.")
+            st.markdown(f'<div class="history-card" style="border-left:5px solid #28a745"><div style="display:flex;justify-content:space-between;"><div><b>{r["Carro"]}</b><br>{r["Cliente"]} | {r["Placa"]}</div><div style="text-align:right"><b style="color:#39FF14">{total_hist}</b><br><small>{r["Data"]}</small></div></div><div style="color:#888">{r.get("Serviços", "")}</div></div>', unsafe_allow_html=True)
+    else: st.info("Histórico Vazio.")
 
 if menu_selecionado == "DASHBOARD": page_dashboard()
 elif menu_selecionado == "AGENDA": page_agendamento()
