@@ -46,59 +46,79 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS "APPLE GLASS" (MODO VIDRO ATIVADO) ---
+# --- 3. ESTILO CSS "APPLE NATIVE" (FONTE E INPUTS REFINADOS) ---
 # ==============================================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    /* FONTE NATIVA (San Francisco no iPhone / Segoe UI no Windows) */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
-    * { font-family: 'Poppins', sans-serif !important; }
+    * { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important; 
+    }
     
-    /* Fundo Geral */
+    /* FUNDO GERAL */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important; 
-        background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 70%);
+        background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 80%);
     }
     .block-container { padding-top: 1rem; padding-bottom: 6rem; }
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
+    
+    /* ESCONDER MARCAS DO STREAMLIT (PRO LOOK) */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* INPUTS "GLASS" (Caixas de Texto Transparentes) */
+    input[type="text"], input[type="number"], input[type="date"], input[type="time"], .stSelectbox > div > div {
+        background-color: rgba(30, 30, 30, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 10px !important;
+        backdrop-filter: blur(5px) !important;
+    }
+    /* Quando clica no input */
+    .stTextInput > div > div[data-baseweb="input"]:focus-within {
+        border-color: #D90429 !important;
+        box-shadow: 0 0 0 1px #D90429 !important;
+    }
 
     /* MENU SUPERIOR EM BLOCOS (GLASS) */
     div[role="radiogroup"] {
         display: flex !important; flex-direction: row !important; width: 100% !important;
         justify-content: space-between !important; background-color: transparent !important;
-        border: none !important; padding: 0 !important; gap: 12px !important;
+        border: none !important; padding: 0 !important; gap: 8px !important;
     }
     div[role="radiogroup"] label {
         flex: 1 !important; 
-        background-color: rgba(30, 30, 30, 0.4) !important; /* Transparencia */
-        backdrop-filter: blur(10px) !important; /* Desfoque Vidro */
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Borda Fina */
-        padding: 12px 5px !important; border-radius: 12px !important; transition: all 0.3s ease !important;
-        margin: 0 !important; color: #aaa !important; font-weight: 600 !important;
-        font-size: 16px !important; white-space: nowrap !important; display: flex;
+        background-color: rgba(30, 30, 30, 0.4) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 12px 2px !important; border-radius: 12px !important; transition: all 0.2s ease !important;
+        margin: 0 !important; color: #aaa !important; font-weight: 500 !important;
+        font-size: 14px !important; white-space: nowrap !important; display: flex;
         align-items: center; justify-content: center !important;
     }
-    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 8px; font-size: 18px; }
-    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 8px; font-size: 18px; }
-    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 8px; font-size: 18px; }
-    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 8px; font-size: 18px; }
-    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 8px; font-size: 18px; }
+    /* Ícones do Menu */
+    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 6px; font-size: 16px; }
+    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 6px; font-size: 16px; }
+    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 6px; font-size: 16px; }
+    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 6px; font-size: 16px; }
+    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 6px; font-size: 16px; }
 
     div[role="radiogroup"] label:hover { 
         border-color: #D90429 !important; color: white !important; 
         background-color: rgba(217, 4, 41, 0.15) !important; 
-        transform: translateY(-2px); 
     }
     div[role="radiogroup"] label[data-checked="true"] { 
         background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
         backdrop-filter: blur(12px) !important;
         color: white !important; border-color: rgba(255,255,255,0.2) !important; 
         box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; 
+        font-weight: 700 !important;
     }
     
-    /* CARDS ESTILO APPLE GLASS */
+    /* CARDS */
     .dash-card { 
         border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; 
         position: relative; overflow: hidden; height: 140px !important; 
@@ -109,17 +129,16 @@ st.markdown("""
     }
     .card-icon-bg { position: absolute !important; top: -10px !important; right: -10px !important; font-size: 100px !important; opacity: 0.1 !important; transform: rotate(15deg) !important; pointer-events: none !important; color: white !important; }
     
-    /* Cores translúcidas para o efeito vidro */
     .bg-orange { background: linear-gradient(135deg, rgba(255, 152, 0, 0.3), rgba(245, 124, 0, 0.1)); border-top: 1px solid rgba(255, 152, 0, 0.5); }
     .bg-blue   { background: linear-gradient(135deg, rgba(0, 180, 219, 0.3), rgba(0, 131, 176, 0.1)); border-top: 1px solid rgba(0, 180, 219, 0.5); }
     .bg-red    { background: linear-gradient(135deg, rgba(217, 4, 41, 0.3), rgba(141, 2, 31, 0.1)); border-top: 1px solid rgba(217, 4, 41, 0.5); }
     .bg-green  { background: linear-gradient(135deg, rgba(17, 153, 142, 0.3), rgba(56, 239, 125, 0.1)); border-top: 1px solid rgba(56, 239, 125, 0.5); }
     .bg-gold   { background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(184, 134, 11, 0.1)); color: #FFD700 !important; border-top: 1px solid rgba(255, 215, 0, 0.5); }
     
-    /* CARDS DE LISTA (AGENDA/HISTORICO) - Vidro Escuro */
+    /* CARDS LISTA */
     .agenda-card, .history-card { 
         background-color: rgba(22, 22, 22, 0.6) !important; 
-        backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px) !important;
         border-radius: 16px; padding: 15px; margin-bottom: 12px; 
         border: 1px solid rgba(255, 255, 255, 0.08); 
     }
@@ -582,8 +601,8 @@ def page_agendamento():
                             val_fmt = formatar_moeda(converter_valor(r.get('Total', 0)))
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
-                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
-                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:5px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
+                    else: st.markdown('<button disabled style="background-color:#333; color:#555; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button>', unsafe_allow_html=True)
                 with c_del:
                     if st.button("🗑️", key=f"del_{i}", use_container_width=True):
                         excluir_agendamento(i); st.rerun()
