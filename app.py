@@ -46,7 +46,7 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (CORREÇÃO DE LAYOUT + GLASS) ---
+# --- 3. ESTILO CSS (CORREÇÃO PROPORÇÃO + GLASS) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -72,27 +72,27 @@ st.markdown("""
     }
     .stTextInput > div > div[data-baseweb="input"]:focus-within { border-color: #D90429 !important; box-shadow: 0 0 0 1px #D90429 !important; }
 
-    /* MENU SUPERIOR (CORRIGIDO PARA NÃO QUEBRAR) */
+    /* BOTÕES DE SELEÇÃO (MENU E EXECUTOR) - CORRIGIDO */
     div[role="radiogroup"] { 
         display: flex !important; width: 100% !important; 
-        justify-content: space-between !important; 
+        justify-content: flex-start !important; /* Alinhamento melhor */
         background: transparent !important; border: none !important; 
-        padding: 0 !important; gap: 5px !important; 
+        padding: 0 !important; gap: 8px !important; 
     }
     div[role="radiogroup"] label {
         flex: 1 !important; 
         background-color: rgba(30, 30, 30, 0.4) !important; 
         backdrop-filter: blur(10px) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important; 
-        padding: 10px 0px !important; /* Menos padding lateral para caber */
+        padding: 8px 12px !important; /* AJUSTE DE ALTURA (Menos gordo) */
         border-radius: 10px !important;
         margin: 0 !important; color: #aaa !important; 
-        font-weight: 500 !important; font-size: 13px !important; /* Fonte levemente menor */
+        font-weight: 500 !important; font-size: 14px !important; 
         display: flex; align-items: center; justify-content: center !important; 
-        white-space: nowrap !important; /* O SEGREDO: NÃO QUEBRA LINHA */
+        white-space: nowrap !important;
         transition: all 0.2s ease !important;
     }
-    /* Tenta esconder a bolinha do radio (Hack CSS) */
+    /* Esconde a bolinha padrão do radio */
     div[role="radiogroup"] label > div:first-child { display: none !important; }
 
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: rgba(217, 4, 41, 0.15) !important; }
@@ -102,13 +102,6 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; font-weight: 700 !important;
     }
     
-    /* Ícones Menu */
-    div[role="radiogroup"] label:nth-of-type(1)::before { font-family: "bootstrap-icons"; content: "\\F5A6"; margin-right: 4px; font-size: 14px; }
-    div[role="radiogroup"] label:nth-of-type(2)::before { font-family: "bootstrap-icons"; content: "\\F20E"; margin-right: 4px; font-size: 14px; }
-    div[role="radiogroup"] label:nth-of-type(3)::before { font-family: "bootstrap-icons"; content: "\\F23E"; margin-right: 4px; font-size: 14px; }
-    div[role="radiogroup"] label:nth-of-type(4)::before { font-family: "bootstrap-icons"; content: "\\F4E9"; margin-right: 4px; font-size: 14px; }
-    div[role="radiogroup"] label:nth-of-type(5)::before { font-family: "bootstrap-icons"; content: "\\F291"; margin-right: 4px; font-size: 14px; }
-
     /* CARDS */
     .dash-card { 
         border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; height: 140px !important; 
@@ -375,7 +368,8 @@ with c_logo2:
     else: st.markdown("<h1 style='text-align:center; color:#D90429; font-weight:800'>JM DETAIL</h1>", unsafe_allow_html=True)
 
 st.write("") 
-menu_opcoes = ["DASHBOARD", "AGENDA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
+# MENU COM EMOJIS (PARA NÃO PRECISAR DE CSS COMPLEXO)
+menu_opcoes = ["📊 DASHBOARD", "📅 AGENDA", "💲 FINANCEIRO", "💸 DESPESAS", "🕰️ HISTÓRICO"]
 menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 st.write("---") 
 
@@ -505,6 +499,7 @@ def page_financeiro():
                     st.success("Pago!"); t_sleep.sleep(1); st.rerun()
     
     with col_pdf:
+        # BOTÃO RELATÓRIO MENSAL
         if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
             resumo = {
                 "mes": datetime.now().strftime("%m/%Y"),
@@ -651,10 +646,10 @@ def page_historico():
             st.markdown(f'<div class="history-card" style="border-left:5px solid #28a745"><div style="display:flex;justify-content:space-between;"><div><b>{r["Carro"]}</b><br>{r["Cliente"]} | {r["Placa"]}</div><div style="text-align:right"><b style="color:#39FF14">{total_hist}</b><br><small>{r["Data"]}</small></div></div><div style="color:#888">{r["Serviços"]}</div></div>', unsafe_allow_html=True)
     else: st.info("Vazio.")
 
-if menu_selecionado == "DASHBOARD": page_dashboard()
-elif menu_selecionado == "AGENDA": page_agendamento()
-elif menu_selecionado == "HISTÓRICO": page_historico()
-elif menu_selecionado == "FINANCEIRO": page_financeiro()
-elif menu_selecionado == "DESPESAS": page_despesas()
+if "DASHBOARD" in menu_selecionado: page_dashboard()
+elif "AGENDA" in menu_selecionado: page_agendamento()
+elif "HISTÓRICO" in menu_selecionado: page_historico()
+elif "FINANCEIRO" in menu_selecionado: page_financeiro()
+elif "DESPESAS" in menu_selecionado: page_despesas()
 
 st.markdown('<div class="footer">JM Detail System © 2026 | Desenvolvido por Jairan Jesus Matos</div>', unsafe_allow_html=True)
