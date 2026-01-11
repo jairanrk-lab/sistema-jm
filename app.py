@@ -360,7 +360,7 @@ def page_dashboard():
     
     df_v = carregar_dados("Vendas")
     df_d = carregar_dados("Despesas")
-    df_a = carregar_dados("Agendamentos") # NOVO: Carregar agenda para painel
+    df_a = carregar_dados("Agendamentos")
     
     receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0
     lucro_operacional = 0.0
@@ -403,24 +403,38 @@ def page_dashboard():
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
-            # GRÁFICO COLORIDO POR CLIENTE (STACKED BAR)
+            # PALETA NEON PERSONALIZADA PARA BARRAS COLORIDAS
+            neon_scale = alt.Scale(range=['#D90429', '#00B4DB', '#39FF14', '#FFD700', '#FF00FF', '#FF4500', '#1E90FF'])
+            
+            # Base do gráfico
             base = alt.Chart(df_mes).encode(
-                x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m')),
+                x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m'))
+            )
+            
+            # BARRAS EMPILHADAS (Cores Neon)
+            bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                 y=alt.Y('Total:Q', title=None),
-                color=alt.Color('Cliente', legend=None), # COR DIFERENTE POR CLIENTE
+                color=alt.Color('Cliente', legend=None, scale=neon_scale),
                 tooltip=['Data', 'Cliente', 'Carro', alt.Tooltip('Total:Q', format=',.2f')]
             )
-            bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
-            chart = bars.properties(height=320, background='transparent')
+            
+            # LINHA DE TENDÊNCIA (Soma Total do Dia) - Branca Brilhante
+            line = base.mark_line(strokeWidth=3, color='#FFFFFF').encode(
+                y='sum(Total):Q'
+            ) + base.mark_circle(size=80, color='#FFFFFF').encode(
+                y='sum(Total):Q',
+                tooltip=[alt.Tooltip('sum(Total):Q', format=',.2f', title='Total do Dia')]
+            )
+            
+            # COMBINA BARRAS E LINHA
+            chart = alt.layer(bars, line).properties(height=320, background='transparent')
             st.altair_chart(chart, use_container_width=True)
         else: st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
-        # LÓGICA DE AGENDAMENTOS FUTUROS
         if not df_a.empty:
             df_a['Data_dt'] = pd.to_datetime(df_a['Data'], dayfirst=True, errors='coerce')
-            # Filtra de hoje em diante
             hoje_dia = pd.to_datetime(date.today())
             df_futuro = df_a[df_a['Data_dt'] >= hoje_dia].sort_values(by="Data_dt").head(3)
             
@@ -539,11 +553,13 @@ def page_agendamento():
             dt = c4.date_input("Data", value=date.today()); hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
             cat = st.selectbox("Categoria:", df_cat["Categoria"], index=val_cat_idx)
+            # CORREÇÃO: REMOVE "TELEFONE" DA LISTA DE SERVIÇOS
             servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c not in ["Categoria", "Telefone", "telefone", "Obs"]], placeholder="Selecione os serviços...")
             ce1, ce2, ce3 = st.columns(3)
             ext = ce1.number_input("Valor Extra", min_value=0.0); desc = ce2.number_input("Desconto", min_value=0.0); qm = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
             if servs:
+                # Prepara itens com valores para PDF e Cálculo
                 itens_calc = []
                 total = 0.0
                 for s in servs:
@@ -564,11 +580,13 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
+                            # CORREÇÃO ZAP: FORMATO LISTA E R$
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
+                    # PASSAMOS AGORA A LISTA DETALHADA
                     d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_calc, "Total": total}
                     st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento(d_pdf), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
 
@@ -577,6 +595,7 @@ def page_agendamento():
         if df_a.empty: st.info("Vazio.")
         else:
             for i, r in df_a.iterrows():
+                # BLINDAGEM NO CARD DE AGENDA
                 val_total = converter_valor(r.get('Total', 0))
                 st.markdown(f'<div class="agenda-card"><div style="display:flex; justify-content:space-between;"><b>{r["Data"]} {r["Hora"]}</b><b style="color:#39FF14">{formatar_moeda(val_total)}</b></div><div style="font-size:18px"><b>{obter_icone_html(r.get("Categoria",""))} {r["Veiculo"]}</b> ({r["Placa"]})</div><div>{r["Cliente"]}</div><div style="color:#888">🔧 {r["Servicos"]}</div></div>', unsafe_allow_html=True)
                 c_ok, c_zap, c_del = st.columns([2, 1, 1])
@@ -591,6 +610,7 @@ def page_agendamento():
                         z_clean = limpar_numero(r.get("Telefone"))
                         if z_clean:
                             val_fmt = formatar_moeda(converter_valor(r.get('Total', 0)))
+                            # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
