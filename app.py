@@ -72,7 +72,7 @@ st.markdown("""
     }
     .stTextInput > div > div[data-baseweb="input"]:focus-within { border-color: #D90429 !important; box-shadow: 0 0 0 1px #D90429 !important; }
 
-    /* MENU SUPERIOR (BLINDADO) */
+    /* MENU SUPERIOR (BLINDADO - NOWRAP) */
     div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background: transparent !important; border: none !important; padding: 0 !important; gap: 8px !important; }
     div[role="radiogroup"] label {
         flex: 1 !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
@@ -403,22 +403,22 @@ def page_dashboard():
     with col_graf:
         st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
         if not df_v.empty and 'df_mes' in locals() and not df_mes.empty:
-            # PALETA NEON PERSONALIZADA PARA BARRAS COLORIDAS
-            neon_scale = alt.Scale(range=['#D90429', '#00B4DB', '#39FF14', '#FFD700', '#FF00FF', '#FF4500', '#1E90FF'])
             
-            # Base do gráfico
+            # --- CORREÇÃO DO GRÁFICO: PALETA NEON VIBRANTE ---
+            neon_scale = alt.Scale(range=['#39FF14', '#00B4DB', '#F72585', '#4361EE', '#FFD700', '#FF4500', '#B026FF'])
+            
             base = alt.Chart(df_mes).encode(
                 x=alt.X('Data_dt:T', title=None, axis=alt.Axis(labelColor='#aaa', grid=False, format='%d/%m'))
             )
             
-            # BARRAS EMPILHADAS (Cores Neon)
+            # BARRAS EMPILHADAS COLORIDAS (NEON)
             bars = base.mark_bar(size=28, cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                 y=alt.Y('Total:Q', title=None),
                 color=alt.Color('Cliente', legend=None, scale=neon_scale),
                 tooltip=['Data', 'Cliente', 'Carro', alt.Tooltip('Total:Q', format=',.2f')]
             )
             
-            # LINHA DE TENDÊNCIA (Soma Total do Dia) - Branca Brilhante
+            # LINHA DE TENDÊNCIA BRANCA (TOTAL DO DIA)
             line = base.mark_line(strokeWidth=3, color='#FFFFFF').encode(
                 y='sum(Total):Q'
             ) + base.mark_circle(size=80, color='#FFFFFF').encode(
@@ -426,13 +426,13 @@ def page_dashboard():
                 tooltip=[alt.Tooltip('sum(Total):Q', format=',.2f', title='Total do Dia')]
             )
             
-            # COMBINA BARRAS E LINHA
             chart = alt.layer(bars, line).properties(height=320, background='transparent')
             st.altair_chart(chart, use_container_width=True)
         else: st.info("Sem dados de vendas neste mês.")
 
     with col_prox:
         st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
+        # --- LÓGICA DE AGENDAMENTOS FUTUROS (CORRIGIDO ESTILO) ---
         if not df_a.empty:
             df_a['Data_dt'] = pd.to_datetime(df_a['Data'], dayfirst=True, errors='coerce')
             hoje_dia = pd.to_datetime(date.today())
@@ -440,11 +440,12 @@ def page_dashboard():
             
             if not df_futuro.empty:
                 for _, r in df_futuro.iterrows():
+                    # CARD "GLASS" PARA PRÓXIMOS
                     st.markdown(f"""
-                    <div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 8px; border-left: 3px solid #D90429;">
-                        <div style="font-weight:bold; color:white;">{r['Data']} - {r['Hora']}</div>
-                        <div style="color:#ccc; font-size:13px;">{r['Veiculo']}</div>
-                        <div style="color:#888; font-size:12px;">{r['Cliente']}</div>
+                    <div style="background-color: rgba(30,30,30,0.4); backdrop-filter: blur(5px); padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #39FF14;">
+                        <div style="font-weight:bold; color:white; font-size:14px;"><i class="bi bi-clock"></i> {r['Data']} - {r['Hora']}</div>
+                        <div style="color:#ddd; font-size:13px; margin-top:4px;"><b>{r['Veiculo']}</b></div>
+                        <div style="color:#aaa; font-size:12px;">{r['Cliente']}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else: st.info("Sem agendamentos futuros.")
@@ -553,13 +554,11 @@ def page_agendamento():
             dt = c4.date_input("Data", value=date.today()); hr = c4.time_input("Horário", value=time(8, 0)).strftime("%H:%M")
             
             cat = st.selectbox("Categoria:", df_cat["Categoria"], index=val_cat_idx)
-            # CORREÇÃO: REMOVE "TELEFONE" DA LISTA DE SERVIÇOS
             servs = st.multiselect("Serviços:", [c for c in df_cat.columns if c not in ["Categoria", "Telefone", "telefone", "Obs"]], placeholder="Selecione os serviços...")
             ce1, ce2, ce3 = st.columns(3)
             ext = ce1.number_input("Valor Extra", min_value=0.0); desc = ce2.number_input("Desconto", min_value=0.0); qm = ce3.radio("Executor:", ["Eu Mesmo", "Equipe"], horizontal=True)
             
             if servs:
-                # Prepara itens com valores para PDF e Cálculo
                 itens_calc = []
                 total = 0.0
                 for s in servs:
@@ -580,13 +579,11 @@ def page_agendamento():
                         st.success("Agendado!"); t_sleep.sleep(1)
                         z_clean = limpar_numero(zap)
                         if z_clean:
-                            # CORREÇÃO ZAP: FORMATO LISTA E R$
                             msg_txt = f"Ola {cli}, agendamento confirmado na JM Detail:\n> Veiculo: {veic}\n> Data: {dt.strftime('%d/%m/%Y')} as {hr}\n> Valor Total: {formatar_moeda(total)}"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background:#25D366;color:white;width:100%;border:none;padding:10px;border-radius:5px">ENVIAR NO WHATSAPP</button></a>', unsafe_allow_html=True)
                 
                 if b2.button("📄 GERAR ORÇAMENTO PDF", use_container_width=True):
-                    # PASSAMOS AGORA A LISTA DETALHADA
                     d_pdf = {"Cliente": cli, "Veiculo": veic, "Placa": placa_input, "Data": dt.strftime("%d/%m/%Y"), "Itens": itens_calc, "Total": total}
                     st.download_button("📥 BAIXAR PDF", gerar_pdf_orcamento(d_pdf), f"Orcamento_{cli}.pdf", "application/pdf", use_container_width=True)
 
@@ -595,7 +592,6 @@ def page_agendamento():
         if df_a.empty: st.info("Vazio.")
         else:
             for i, r in df_a.iterrows():
-                # BLINDAGEM NO CARD DE AGENDA
                 val_total = converter_valor(r.get('Total', 0))
                 st.markdown(f'<div class="agenda-card"><div style="display:flex; justify-content:space-between;"><b>{r["Data"]} {r["Hora"]}</b><b style="color:#39FF14">{formatar_moeda(val_total)}</b></div><div style="font-size:18px"><b>{obter_icone_html(r.get("Categoria",""))} {r["Veiculo"]}</b> ({r["Placa"]})</div><div>{r["Cliente"]}</div><div style="color:#888">🔧 {r["Servicos"]}</div></div>', unsafe_allow_html=True)
                 c_ok, c_zap, c_del = st.columns([2, 1, 1])
@@ -610,7 +606,6 @@ def page_agendamento():
                         z_clean = limpar_numero(r.get("Telefone"))
                         if z_clean:
                             val_fmt = formatar_moeda(converter_valor(r.get('Total', 0)))
-                            # MENSAGEM ZAP CARRO PRONTO
                             msg_txt = f"Ola {r['Cliente']}! Seu {r['Veiculo']} ja esta pronto na JM Detail.\n> Valor Total: {val_fmt}\n> Pode vir buscar!"
                             msg_enc = urllib.parse.quote(msg_txt)
                             st.markdown(f'<a href="https://wa.me/55{z_clean}?text={msg_enc}" target="_blank"><button style="background-color:#128C7E; color:white; border:none; border-radius:10px; height:45px; width:100%"><i class="bi bi-whatsapp"></i></button></a>', unsafe_allow_html=True)
@@ -631,7 +626,6 @@ def page_historico():
     st.markdown('## <i class="bi bi-clock-history"></i> Histórico', unsafe_allow_html=True)
     df = carregar_dados("Vendas")
     if not df.empty:
-        # --- NOVO: RANKING VIP (VOLTA DAS MEDALHAS) ---
         df["Total_Num"] = df["Total"].apply(converter_valor)
         ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
         
@@ -649,7 +643,6 @@ def page_historico():
             """, unsafe_allow_html=True)
         st.write("---")
 
-        # Lista Padrão
         busca = st.text_input("🔍 Buscar...").strip().lower()
         df_f = df.iloc[::-1]
         if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
