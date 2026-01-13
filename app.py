@@ -474,7 +474,10 @@ def page_dashboard():
     
     try:
         df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); df_a = carregar_dados("Agendamentos")
-        receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0; lucro_operacional = 0.0; df_mes = pd.DataFrame() 
+        
+        # Processamento
+        rec, desp, custo_f = 0.0, 0.0, obter_custo_fixo()
+        pendente_total, count_p = 0.0, 0
         
         if not df_v.empty:
             df_v.columns = [c.strip().capitalize() for c in df_v.columns]
@@ -486,36 +489,31 @@ def page_dashboard():
                 receita_mes = df_mes[df_mes["Status"].str.strip() == "Concluído"]["Total"].sum()
                 pendente_total = df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)]["Total"].sum()
                 count_p = len(df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)])
-                lucro_operacional = receita_mes * 0.50
         
         if not df_d.empty:
             df_d.columns = [c.strip().capitalize() for c in df_d.columns]
             df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
             df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
             if "Valor" in df_d.columns: despesa_mes = df_d_mes["Valor"].apply(converter_valor).sum()
+
+        lucro = (rec * 0.5) - desp - custo_f
+        META = 5000.00; pct = min((rec / META) * 100, 100.0) if META > 0 else 0
         
-        # Custo Fixo e Lucro
-        custo_fixo = obter_custo_fixo()
-        lucro_final = lucro_operacional - despesa_mes - custo_fixo
-        
-        META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
-        
-        # --- SEUS CARDS ORIGINAIS (MANTIDOS) ---
+        # BARRA DE META
         st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
         
+        # CARDS ORIGINAIS (MANTIDOS)
         c1, c2 = st.columns(2)
         with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
         with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
         
         c3, c4 = st.columns(2)
-        with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS + FIXO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes + custo_fixo)}</div><small>Ext: {formatar_moeda(despesa_mes)} | Fixo: {formatar_moeda(custo_fixo)}</small></div>', unsafe_allow_html=True)
-        with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Total Despesas</small></div>', unsafe_allow_html=True)
-        
+        with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS + FIXO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes + custo_f)}</div><small>Ext: {formatar_moeda(despesa_mes)} | Fixo: {formatar_moeda(custo_f)}</small></div>', unsafe_allow_html=True)
+        with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro)}</div><small>50% Bruto - Total Despesas</small></div>', unsafe_allow_html=True)
+
         st.write("---")
         
-        # --- AQUI ESTÁ A NOVIDADE (GRÁFICOS + ALERTA) ---
-        
-        # 1. Alerta de Estoque Discreto
+        # 1. Alerta de Estoque (Discreto)
         try:
             sheet = conectar_google_sheets()
             if sheet:
@@ -523,7 +521,6 @@ def page_dashboard():
                 if not df_est.empty and "Atual_ml" in df_est.columns:
                     itens_criticos = 0
                     for i, row in df_est.iterrows():
-                         # Tenta converter, se der erro assume 0
                         try: at = float(str(row.get("Atual_ml", 0)).replace(",", "."))
                         except: at = 0.0
                         if at < 1000: itens_criticos += 1
@@ -537,12 +534,11 @@ def page_dashboard():
                         """, unsafe_allow_html=True)
         except: pass
 
-        # 2. Gráficos de Inteligência (Pizza e Linha)
+        # 2. GRÁFICOS (COM A COR CINZA ORIGINAL DE VOLTA)
         if not df_mes.empty:
             g1, g2 = st.columns(2)
             with g1:
                 st.markdown('###### <i class="bi bi-pie-chart"></i> Serviços Favoritos', unsafe_allow_html=True)
-                # Tenta agrupar por 'Carro' (ou 'Serviços' se tiver separado) para simular categorias
                 if "Carro" in df_mes.columns:
                     df_pie = df_mes["Carro"].value_counts().reset_index().head(5)
                     df_pie.columns = ["Tipo", "Qtd"]
@@ -554,15 +550,16 @@ def page_dashboard():
                 st.markdown('###### <i class="bi bi-graph-up"></i> Evolução Diária', unsafe_allow_html=True)
                 df_chart = df_mes.groupby(df_mes['Data_dt'].dt.date)['Total'].sum().reset_index()
                 df_chart.columns = ['Data', 'Faturamento']
+                
+                # AQUI ESTÁ A CORREÇÃO DA COR (VOLTOU PRO CINZA #E0E0E0)
                 fig = px.line(df_chart, x='Data', y='Faturamento', markers=True)
-                fig.update_traces(line_color='#39FF14', line_width=3)
+                fig.update_traces(line_color='#E0E0E0', line_width=3, marker=dict(size=6, color='#FFFFFF')) 
                 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(255,255,255,0.05)', font_color="white", margin=dict(t=10, b=10, l=0, r=0), height=200, xaxis_showgrid=False)
                 st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Lance vendas neste mês para ver os gráficos!")
 
     except Exception as e: st.error(f"Erro no Dashboard: {e}")
-
 # --- NOVA ABA EXCLUSIVA DE ESTOQUE (VISUAL COMPLETO) ---
 def page_estoque():
     st.markdown('## <i class="bi bi-box-seam" style="color: #F5A623;"></i> Controle de Estoque (Produtos)', unsafe_allow_html=True)
