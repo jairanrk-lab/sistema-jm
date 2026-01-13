@@ -489,10 +489,13 @@ def page_dashboard():
     hoje = datetime.now()
     mes_atual, ano_atual = hoje.month, hoje.year
     nome_meses = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
     st.markdown(f'## <i class="bi bi-speedometer2" style="color: #00B4DB;"></i> Painel Geral <small style="font-size:14px; color:#888">| {nome_meses[mes_atual]}/{ano_atual}</small>', unsafe_allow_html=True)
+    
     try:
         df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); df_a = carregar_dados("Agendamentos")
         receita_mes, despesa_mes, pendente_total, count_p = 0.0, 0.0, 0.0, 0; lucro_operacional = 0.0; df_mes = pd.DataFrame() 
+        
         if not df_v.empty:
             df_v.columns = [c.strip().capitalize() for c in df_v.columns]
             for c in ["Total"]: 
@@ -504,25 +507,33 @@ def page_dashboard():
                 pendente_total = df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)]["Total"].sum()
                 count_p = len(df_v[df_v["Status"].str.contains("Pendente|Orçamento", case=False, na=False)])
                 lucro_operacional = receita_mes * 0.50
+        
         if not df_d.empty:
             df_d.columns = [c.strip().capitalize() for c in df_d.columns]
             df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
             df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
             if "Valor" in df_d.columns: despesa_mes = df_d_mes["Valor"].apply(converter_valor).sum()
         
-        # FASE 3: Custo Fixo Automático
+        # Custo Fixo e Lucro
         custo_fixo = obter_custo_fixo()
         lucro_final = lucro_operacional - despesa_mes - custo_fixo
         
         META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
+        
+        # --- CARDS DO TOPO ---
         st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
+        
         c1, c2 = st.columns(2)
         with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
         with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
+        
         c3, c4 = st.columns(2)
         with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS + FIXO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes + custo_fixo)}</div><small>Ext: {formatar_moeda(despesa_mes)} | Fixo: {formatar_moeda(custo_fixo)}</small></div>', unsafe_allow_html=True)
         with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Total Despesas</small></div>', unsafe_allow_html=True)
+        
         st.write("---")
+        
+        # --- ÁREA CENTRAL: GRÁFICO E AGENDA ---
         col_graf, col_prox = st.columns([2, 1])
         with col_graf:
             st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
@@ -534,6 +545,7 @@ def page_dashboard():
                 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=10, b=10), height=320, xaxis=dict(showgrid=False, tickformat='%d/%m', tickfont=dict(color='#888'), linecolor='rgba(255,255,255,0.2)'), yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888'), zeroline=False))
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             else: st.info("Sem dados de vendas neste mês.")
+        
         with col_prox:
             st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
             if not df_a.empty:
@@ -543,6 +555,54 @@ def page_dashboard():
                         st.markdown(f'<div style="background-color: rgba(30,30,30,0.4); backdrop-filter: blur(5px); padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #39FF14;"><div style="font-weight:bold; color:white; font-size:14px;"><i class="bi bi-clock"></i> {r["Data"]} - {r["Hora"]}</div><div style="color:#ddd; font-size:13px; margin-top:4px;"><b>{r["Veiculo"]}</b></div><div style="color:#aaa; font-size:12px;">{r["Cliente"]}</div></div>', unsafe_allow_html=True)
                 else: st.info("Sem agendamentos futuros.")
             else: st.info("Agenda vazia.")
+            
+        st.write("---")
+        
+        # --- NOVIDADE: MONITOR DE ESTOQUE VISUAL ---
+        st.markdown('### <i class="bi bi-box-seam" style="color: #F5A623;"></i> Monitor de Estoque', unsafe_allow_html=True)
+        try:
+            # Puxa dados da planilha
+            sheet = conectar_google_sheets()
+            if sheet:
+                ws_est = sheet.worksheet("Estoque")
+                dados_est = ws_est.get_all_records()
+                df_est = pd.DataFrame(dados_est)
+                
+                if not df_est.empty and "Atual_ml" in df_est.columns:
+                    # Mostra em colunas de 3 em 3
+                    cols = st.columns(3)
+                    for i, row in df_est.iterrows():
+                        nome = str(row.get("Produto", "Item"))
+                        try: atual = float(str(row.get("Atual_ml", 0)).replace(",", "."))
+                        except: atual = 0.0
+                        
+                        # Define máximo como 5000ml (5L) se não souber, ou usa lógica simples
+                        # Aqui vamos assumir que 5000ml é "cheio" para barras visuais
+                        max_val = 5000.0
+                        progresso = min(atual / max_val, 1.0)
+                        
+                        # Cor da barra: Vermelho se < 20%, Verde se > 20%
+                        cor_barra = "#39FF14" if progresso > 0.2 else "#D90429"
+                        msg_aviso = "🔴 COMPRAR!" if progresso <= 0.2 else "🟢 OK"
+
+                        with cols[i % 3]:
+                            st.markdown(f"""
+                            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:10px;">
+                                <div style="font-weight:bold; font-size:13px; color:#ddd;">{nome}</div>
+                                <div style="font-size:11px; color:#aaa; display:flex; justify-content:space-between;">
+                                    <span>{int(atual)} ml</span>
+                                    <span style="color:{cor_barra}; font-weight:bold;">{msg_aviso}</span>
+                                </div>
+                                <div style="width:100%; background:#444; height:6px; border-radius:3px; margin-top:5px;">
+                                    <div style="width:{int(progresso*100)}%; background:{cor_barra}; height:6px; border-radius:3px;"></div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                else:
+                    st.info("Planilha de Estoque vazia ou colunas erradas.")
+        except Exception as e:
+            st.warning(f"Estoque indisponível no momento. (Verifique conexão)")
+
     except Exception as e: st.error(f"Erro no Dashboard: {e}")
 
 def page_financeiro():
