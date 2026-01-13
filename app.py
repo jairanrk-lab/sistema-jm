@@ -10,23 +10,19 @@ import re
 import urllib.parse
 import shutil
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA (FRONTEND BÁSICO) ---
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
-# --- 2. SISTEMA DE LOGIN (SESSION STATE & SEGURANÇA) ---
+# --- 2. SISTEMA DE LOGIN ---
 # ==============================================================================
 def check_password():
-    # Verifica se já está logado na memória do navegador (Session State)
     if st.session_state.get("password_correct", False):
         return True
-    
-    # Verifica se tem o parâmetro na URL (login rápido)
     if st.query_params.get("logado") == "true":
         st.session_state["password_correct"] = True
         return True
     
-    # Formulário de Login
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -35,13 +31,11 @@ def check_password():
             pwd = st.text_input("Digite a senha de acesso:", type="password")
             submit = st.form_submit_button("ACESSAR SISTEMA")
             if submit:
-                # Busca senha no secrets ou usa padrão
                 try: senha_correta = st.secrets["app"]["password"]
                 except: senha_correta = "1234"
-                
                 if pwd == senha_correta: 
                     st.session_state["password_correct"] = True
-                    st.query_params["logado"] = "true" # Salva na URL para não deslogar ao atualizar
+                    st.query_params["logado"] = "true"
                     st.rerun()
                 else: st.error("Senha incorreta.")
     return False
@@ -49,19 +43,16 @@ def check_password():
 if not check_password(): st.stop()
 
 # ==============================================================================
-# --- 3. ESTILO CSS (INJEÇÃO DE CÓDIGO FRONTEND) ---
+# --- 3. ESTILO CSS ---
 # ==============================================================================
 st.markdown("""
 <style>
-    /* Importa ícones do Bootstrap (CDN) */
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
-    /* Força fonte Apple/Sistema para evitar erros de ícone */
     html, body, p, h1, h2, h3, h4, h5, h6, li, a, button, input, textarea, label, .stTextInput, .stNumberInput, .stSelectbox {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
     
-    /* Tema Dark/Glass */
     [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
         background-color: #000000 !important; 
         background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 80%);
@@ -70,7 +61,7 @@ st.markdown("""
     [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
     #MainMenu, footer {visibility: hidden;}
 
-    /* Inputs com efeito de vidro (Glassmorphism) */
+    /* Inputs Glass */
     input[type="text"], input[type="number"], input[type="date"], input[type="time"], .stSelectbox > div > div, .stMultiSelect > div > div {
         background-color: rgba(30, 30, 30, 0.4) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -78,12 +69,12 @@ st.markdown("""
         backdrop-filter: blur(5px) !important;
     }
     
-    /* Menu Superior Estilizado */
-    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background: transparent !important; border: none !important; padding: 0 !important; gap: 8px !important; }
+    /* Menu Superior */
+    div[role="radiogroup"] { display: flex !important; width: 100% !important; justify-content: space-between !important; background: transparent !important; border: none !important; padding: 0 !important; gap: 5px !important; overflow-x: auto !important; }
     div[role="radiogroup"] label {
-        flex: 1 !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 12px 2px !important; border-radius: 12px !important; transition: all 0.2s ease !important;
-        margin: 0 !important; color: #aaa !important; font-weight: 500 !important; font-size: 14px !important; 
+        flex: 1 !important; min-width: 80px !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 10px 2px !important; border-radius: 12px !important; transition: all 0.2s ease !important;
+        margin: 0 !important; color: #aaa !important; font-weight: 500 !important; font-size: 12px !important; 
         white-space: nowrap !important; display: flex; align-items: center; justify-content: center !important;
     }
     div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: rgba(217, 4, 41, 0.15) !important; }
@@ -93,7 +84,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; font-weight: 700 !important;
     }
     
-    /* Cards do Dashboard */
+    /* Cards */
     .dash-card { 
         border-radius: 18px; padding: 20px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; height: 140px !important; 
         display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1);
@@ -118,12 +109,19 @@ st.markdown("""
 
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
     div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 10px !important; font-weight: 700 !important; border: none !important; height: 45px !important; box-shadow: 0 4px 10px rgba(217, 4, 41, 0.3); }
+    
+    /* Alerta de Estoque */
+    .stock-alert {
+        background-color: rgba(217, 4, 41, 0.2); border: 1px solid #D90429; color: #ffcccc;
+        padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(217, 4, 41, 0); } 100% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0); } }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 4. FUNÇÕES DE BACKEND (LÓGICA E DADOS) ---
+# --- 4. FUNÇÕES DE BACKEND ---
 
-# Converte strings de dinheiro "R$ 1.000,00" para float 1000.00
 def converter_valor(valor):
     if isinstance(valor, (int, float)): return float(valor)
     try:
@@ -140,13 +138,12 @@ def formatar_moeda(valor):
     try: return f"R$ {float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except: return "R$ 0,00"
 
-# Conexão com Google Sheets (API)
 def conectar_google_sheets():
-    ID_FIXO = "1-/1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
+    # ID ATUALIZADO PELO USUÁRIO (Preencha aqui se ainda não tiver feito)
+    ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg" 
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
             ID_FIXO = st.secrets["app"]["spreadsheet_id"]
-        # Tenta conectar por arquivo local ou secrets da nuvem
         if os.path.exists("chave_google.json"): 
             client = gspread.service_account(filename="chave_google.json")
         elif "gcp_service_account" in st.secrets:
@@ -157,7 +154,6 @@ def conectar_google_sheets():
         st.error(f"Erro Conexão Google: {e}")
         return None
 
-# Carrega dados e transforma em DataFrame do Pandas
 def carregar_dados(aba):
     sheet = conectar_google_sheets()
     if sheet is None: return pd.DataFrame()
@@ -190,43 +186,34 @@ def excluir_agendamento(indice_linha):
         st.error(f"Erro ao excluir: {e}")
         return False
 
-# --- FUNÇÕES ESPECÍFICAS (FASES 2 E 3 - ESTOQUE E CUSTO) ---
+# --- FUNÇÕES DE ESTOQUE E CUSTO ---
 
 def atualizar_estoque_auto():
-    """ FASE 2: Desconta produtos automaticamente baseado na aba Estoque """
     sheet = conectar_google_sheets()
     if sheet:
         try:
             ws = sheet.worksheet("Estoque")
-            # Pega todos os dados da planilha
             dados = ws.get_all_values() 
             if len(dados) > 1:
-                # Descobre em qual coluna estão os dados (ex: 'Atual_ml' pode ser a B ou C)
                 headers = [h.lower().strip() for h in dados[0]]
-                idx_atual = -1
-                idx_gasto = -1
-                
+                idx_atual, idx_gasto = -1, -1
                 for i, h in enumerate(headers):
                     if "atual" in h: idx_atual = i
                     if "gasto" in h: idx_gasto = i
                 
                 if idx_atual != -1 and idx_gasto != -1:
-                    # Loop para atualizar cada produto
                     for i in range(1, len(dados)):
                         try:
                             atual = float(dados[i][idx_atual].replace(",", ".") or 0)
                             gasto = float(dados[i][idx_gasto].replace(",", ".") or 0)
                             if gasto > 0:
                                 novo_val = max(0, atual - gasto)
-                                # Atualiza a célula no Google Sheets (Linha, Coluna, Valor)
                                 ws.update_cell(i + 1, idx_atual + 1, novo_val)
                         except: pass
         except: pass 
 
-# Cache Data: Guarda o valor por 5 min para não ler a planilha toda hora (Otimização)
 @st.cache_data(ttl=300)
 def obter_custo_fixo():
-    """ FASE 3: Lê o Custo Fixo da aba Config """
     try:
         sheet = conectar_google_sheets()
         if sheet:
@@ -276,12 +263,11 @@ def obter_icone_e_classe(cat):
     elif "van" in c: return '<i class="bi bi-bus-front-fill"></i>', 'b-suv'
     else: return '<i class="bi bi-car-front-fill"></i>', 'b-carro'
 
-# Busca Inteligente (Cruza dados de Agenda e Vendas)
 def buscar_cliente_por_placa(placa_busca):
     try:
         df_a = carregar_dados("Agendamentos")
         df_v = carregar_dados("Vendas")
-        df_c = pd.concat([df_a, df_v], ignore_index=True) # Une as duas tabelas
+        df_c = pd.concat([df_a, df_v], ignore_index=True)
         if df_c.empty: return None
         placa_clean = placa_busca.replace("-", "").strip().upper()
         cols = {c.lower(): c for c in df_c.columns}
@@ -302,7 +288,6 @@ def buscar_cliente_por_placa(placa_busca):
 def gerar_pdf_orcamento(dados):
     pdf = FPDF()
     pdf.add_page()
-    # Tenta carregar logo se existir
     logo_file = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
     if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
     
@@ -320,7 +305,7 @@ def gerar_pdf_orcamento(dados):
     pdf.cell(0, 10, txt(f"DATA: {dados['Data']}"), ln=True)
     pdf.ln(5)
     
-    pdf.set_fill_color(220, 220, 220) # Cinza claro
+    pdf.set_fill_color(220, 220, 220)
     pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1)
     pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
     
@@ -389,27 +374,19 @@ def gerar_pdf_vistoria(dados, fotos_paths):
     pdf.cell(0, 10, txt("REGISTRO FOTOGRÁFICO"), ln=True, align='C')
     pdf.ln(5)
     
-    # Grid de fotos (2 por linha)
-    x_start = 10
-    y_start = pdf.get_y()
-    w_img = 90
-    h_img = 65 
-    
+    x_start = 10; y_start = pdf.get_y(); w_img = 90; h_img = 65 
     col = 0
     for titulo, path in fotos_paths.items():
         if path and os.path.exists(path):
-            if y_start + h_img > 250: # Nova página se não couber
+            if y_start + h_img > 250:
                 pdf.add_page(); y_start = 20
-            
             x = x_start + (col * 95)
             pdf.image(path, x=x, y=y_start, w=w_img, h=h_img)
             pdf.set_xy(x, y_start + h_img + 1)
             pdf.set_font("Arial", size=8)
             pdf.cell(w_img, 5, txt(titulo), 0, 0, 'C')
-            
             col += 1
-            if col > 1:
-                col = 0; y_start += h_img + 10
+            if col > 1: col = 0; y_start += h_img + 10
     
     pdf.set_y(-35)
     pdf.set_font("Arial", size=8)
@@ -470,7 +447,7 @@ def gerar_relatorio_mensal(df_mes, resumo):
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
-# --- 5. INTERFACE DO USUÁRIO (CABEÇALHO E NAVEGAÇÃO) ---
+# --- 5. INTERFACE DO USUÁRIO ---
 # ==============================================================================
 c_logo1, c_logo2, c_logo3 = st.columns([1,3,1])
 with c_logo2:
@@ -479,11 +456,12 @@ with c_logo2:
     else: st.markdown("<h1 style='text-align:center; color:#D90429; font-weight:800'>JM DETAIL</h1>", unsafe_allow_html=True)
 
 st.write("") 
-menu_opcoes = ["DASHBOARD", "AGENDA", "VISTORIA", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
+# MENU NOVO COM A ABA "ESTOQUE"
+menu_opcoes = ["DASHBOARD", "AGENDA", "VISTORIA", "ESTOQUE", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
 menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
 st.write("---") 
 
-# --- 6. PÁGINAS DO SISTEMA ---
+# --- 6. PÁGINAS ---
 
 def page_dashboard():
     hoje = datetime.now()
@@ -498,8 +476,7 @@ def page_dashboard():
         
         if not df_v.empty:
             df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-            for c in ["Total"]: 
-                if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
+            for c in ["Total"]: df_v[c] = df_v[c].apply(converter_valor)
             df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
             df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
             if "Status" in df_v.columns:
@@ -514,13 +491,39 @@ def page_dashboard():
             df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
             if "Valor" in df_d.columns: despesa_mes = df_d_mes["Valor"].apply(converter_valor).sum()
         
-        # Custo Fixo e Lucro
         custo_fixo = obter_custo_fixo()
         lucro_final = lucro_operacional - despesa_mes - custo_fixo
-        
         META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
         
-        # --- CARDS DO TOPO ---
+        # --- LÓGICA DE ALERTA DE ESTOQUE (Só aparece se tiver emergência) ---
+        alerta_txt = ""
+        try:
+            sheet = conectar_google_sheets()
+            if sheet:
+                ws_est = sheet.worksheet("Estoque")
+                dados_est = ws_est.get_all_records()
+                df_est = pd.DataFrame(dados_est)
+                if not df_est.empty and "Atual_ml" in df_est.columns:
+                    itens_criticos = 0
+                    for i, row in df_est.iterrows():
+                        try: atual = float(str(row.get("Atual_ml", 0)).replace(",", "."))
+                        except: atual = 0.0
+                        if atual < 1000: # Critério: Menos de 1 litro (ajustável)
+                            itens_criticos += 1
+                    if itens_criticos > 0:
+                        alerta_txt = f"""
+                        <div class="stock-alert">
+                            <i class="bi bi-exclamation-triangle-fill" style="font-size: 24px;"></i>
+                            <div>
+                                <div style="font-weight:bold; font-size:16px;">ATENÇÃO: ESTOQUE BAIXO</div>
+                                <div style="font-size:14px;">{itens_criticos} produto(s) precisam de reposição urgente. Verifique a aba Estoque.</div>
+                            </div>
+                        </div>
+                        """
+        except: pass
+
+        if alerta_txt: st.markdown(alerta_txt, unsafe_allow_html=True)
+
         st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
@@ -533,7 +536,6 @@ def page_dashboard():
         
         st.write("---")
         
-        # --- ÁREA CENTRAL: GRÁFICO E AGENDA ---
         col_graf, col_prox = st.columns([2, 1])
         with col_graf:
             st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
@@ -555,55 +557,54 @@ def page_dashboard():
                         st.markdown(f'<div style="background-color: rgba(30,30,30,0.4); backdrop-filter: blur(5px); padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #39FF14;"><div style="font-weight:bold; color:white; font-size:14px;"><i class="bi bi-clock"></i> {r["Data"]} - {r["Hora"]}</div><div style="color:#ddd; font-size:13px; margin-top:4px;"><b>{r["Veiculo"]}</b></div><div style="color:#aaa; font-size:12px;">{r["Cliente"]}</div></div>', unsafe_allow_html=True)
                 else: st.info("Sem agendamentos futuros.")
             else: st.info("Agenda vazia.")
-            
-        st.write("---")
-        
-        # --- NOVIDADE: MONITOR DE ESTOQUE VISUAL ---
-        st.markdown('### <i class="bi bi-box-seam" style="color: #F5A623;"></i> Monitor de Estoque', unsafe_allow_html=True)
-        try:
-            # Puxa dados da planilha
-            sheet = conectar_google_sheets()
-            if sheet:
-                ws_est = sheet.worksheet("Estoque")
-                dados_est = ws_est.get_all_records()
-                df_est = pd.DataFrame(dados_est)
-                
-                if not df_est.empty and "Atual_ml" in df_est.columns:
-                    # Mostra em colunas de 3 em 3
-                    cols = st.columns(3)
-                    for i, row in df_est.iterrows():
-                        nome = str(row.get("Produto", "Item"))
-                        try: atual = float(str(row.get("Atual_ml", 0)).replace(",", "."))
-                        except: atual = 0.0
-                        
-                        # Define máximo como 5000ml (5L) se não souber, ou usa lógica simples
-                        # Aqui vamos assumir que 5000ml é "cheio" para barras visuais
-                        max_val = 5000.0
-                        progresso = min(atual / max_val, 1.0)
-                        
-                        # Cor da barra: Vermelho se < 20%, Verde se > 20%
-                        cor_barra = "#39FF14" if progresso > 0.2 else "#D90429"
-                        msg_aviso = "🔴 COMPRAR!" if progresso <= 0.2 else "🟢 OK"
-
-                        with cols[i % 3]:
-                            st.markdown(f"""
-                            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-bottom:10px;">
-                                <div style="font-weight:bold; font-size:13px; color:#ddd;">{nome}</div>
-                                <div style="font-size:11px; color:#aaa; display:flex; justify-content:space-between;">
-                                    <span>{int(atual)} ml</span>
-                                    <span style="color:{cor_barra}; font-weight:bold;">{msg_aviso}</span>
-                                </div>
-                                <div style="width:100%; background:#444; height:6px; border-radius:3px; margin-top:5px;">
-                                    <div style="width:{int(progresso*100)}%; background:{cor_barra}; height:6px; border-radius:3px;"></div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                else:
-                    st.info("Planilha de Estoque vazia ou colunas erradas.")
-        except Exception as e:
-            st.warning(f"Estoque indisponível no momento. (Verifique conexão)")
 
     except Exception as e: st.error(f"Erro no Dashboard: {e}")
+
+# --- NOVA ABA EXCLUSIVA DE ESTOQUE (VISUAL COMPLETO) ---
+def page_estoque():
+    st.markdown('## <i class="bi bi-box-seam" style="color: #F5A623;"></i> Controle de Estoque (Produtos)', unsafe_allow_html=True)
+    st.info("💡 Para adicionar novos produtos ou ajustar quantidades, edite a aba **'Estoque'** na sua planilha Google.")
+    
+    try:
+        sheet = conectar_google_sheets()
+        if sheet:
+            ws_est = sheet.worksheet("Estoque")
+            dados_est = ws_est.get_all_records()
+            df_est = pd.DataFrame(dados_est)
+            
+            if not df_est.empty and "Atual_ml" in df_est.columns:
+                # Mostra TODOS os produtos em GRID (3 colunas)
+                cols = st.columns(3)
+                for i, row in df_est.iterrows():
+                    nome = str(row.get("Produto", "Item"))
+                    try: atual = float(str(row.get("Atual_ml", 0)).replace(",", "."))
+                    except: atual = 0.0
+                    
+                    # Assume 5000ml como tanque cheio para visualização
+                    max_val = 5000.0
+                    progresso = min(atual / max_val, 1.0)
+                    
+                    # Cor da barra
+                    cor_barra = "#39FF14" if progresso > 0.2 else "#D90429"
+                    msg_aviso = "🟢 OK" if progresso > 0.2 else "🔴 REPOR!"
+                    
+                    with cols[i % 3]:
+                        st.markdown(f"""
+                        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid rgba(255,255,255,0.1);">
+                            <div style="font-weight:bold; font-size:16px; color:white; margin-bottom:5px;">{nome}</div>
+                            <div style="display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-bottom:5px;">
+                                <span>Restam: <b style="color:white">{int(atual)} ml</b></span>
+                                <span style="color:{cor_barra}; font-weight:bold;">{msg_aviso}</span>
+                            </div>
+                            <div style="width:100%; background:#333; height:8px; border-radius:4px;">
+                                <div style="width:{int(progresso*100)}%; background:{cor_barra}; height:8px; border-radius:4px; transition: width 0.5s;"></div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                st.warning("Sua aba 'Estoque' está vazia ou sem as colunas corretas (Produto, Atual_ml).")
+    except Exception as e:
+        st.error(f"Erro ao carregar estoque: {e}")
 
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
@@ -712,9 +713,7 @@ def page_agendamento():
                     c_ok, c_zap, c_del = st.columns([2, 1, 1])
                     with c_ok:
                         if st.button("✅ Concluir", key=f"ok_{i}", use_container_width=True):
-                            # FASE 2: Desconta do Estoque Automaticamente
                             atualizar_estoque_auto()
-                            
                             t = converter_valor(r["Total"]); f, c = t * 0.10, (t * 0.40 if "Equipe" in r["Executor"] else 0.0)
                             venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Telefone": r.get("Telefone", ""), "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": t, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": c, "Fundo Caixa": f, "Lucro Liquido": t-f-c, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
                             salvar_no_google("Vendas", venda); excluir_agendamento(i); st.rerun()
@@ -864,7 +863,6 @@ def page_historico():
                         nome = row["Cliente"].split()[0]
                         carro = row["Carro"]
                         
-                        # AS 3 MENSAGENS PERSONALIZADAS (ALINHADAS)
                         if row["Dias sem vir"] <= 30:
                             msg = f"Olá {nome}, tudo bem? Passando apenas para saber como está a conservação do {carro} após o nosso serviço. Se precisar de algum suporte, estou à disposição!"
                         elif row["Dias sem vir"] <= 90:
@@ -884,7 +882,6 @@ def page_historico():
                         column_config={
                             "Dias sem vir": st.column_config.NumberColumn("Ausência", format="%d dias"),
                             "Status": st.column_config.TextColumn("Status", help="Estado atual do cliente"),
-                            # BOTÃO WHATSAPP CLEAN E AJUSTADO
                             "LinkZap": st.column_config.LinkColumn("Contato", display_text="💬 WhatsApp", help="Clique para abrir a conversa")
                         }
                     )
@@ -911,6 +908,7 @@ def page_historico():
 if menu_selecionado == "DASHBOARD": page_dashboard()
 elif menu_selecionado == "AGENDA": page_agendamento()
 elif menu_selecionado == "VISTORIA": page_vistoria() # NOVA ABA
+elif menu_selecionado == "ESTOQUE": page_estoque() # NOVA ABA
 elif menu_selecionado == "HISTÓRICO": page_historico()
 elif menu_selecionado == "FINANCEIRO": page_financeiro()
 elif menu_selecionado == "DESPESAS": page_despesas()
