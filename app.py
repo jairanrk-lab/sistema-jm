@@ -11,107 +11,66 @@ import re
 import urllib.parse
 import shutil
 
-# --- 1. CONFIGURAÇÃO INICIAL (Obrigatório ser a primeira linha) ---
+# --- 1. CONFIGURAÇÃO (BASE) ---
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
-# --- 2. CSS & ESTILO (CORREÇÃO DO MENU E VISUAL) ---
+# --- 2. CSS (IDÊNTICO AO SEU ARQUIVO app (1).py - VISUAL ESTÁVEL) ---
 # ==============================================================================
 st.markdown("""
 <style>
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
-    html, body, p, h1, h2, h3, h4, h5, h6, li, a, button, input, textarea, label, .stTextInput, .stNumberInput, .stSelectbox {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    }
+    html, body, p, h1, h2, h3, h4, h5, h6, input, button, .stSelectbox { font-family: -apple-system, sans-serif !important; }
     
     /* Fundo Dark Glass */
-    [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] { 
-        background-color: #000000 !important; 
-        background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 80%);
-    }
-    .block-container { padding-top: 1rem; padding-bottom: 6rem; }
-    [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+    [data-testid="stAppViewContainer"] { background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 80%); }
     
     /* Inputs Estilizados */
-    input, .stSelectbox > div > div, .stMultiSelect > div > div {
-        background-color: rgba(30, 30, 30, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important; border-radius: 10px !important;
+    input, .stSelectbox > div > div {
+        background-color: rgba(30, 30, 30, 0.4) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important; border-radius: 12px !important; backdrop-filter: blur(5px);
     }
     
-    /* CORREÇÃO DO MENU SUPERIOR (Rolagem Lateral Suave) */
+    /* Menu Superior (Scroll Horizontal no Mobile - Ajustado) */
     div[role="radiogroup"] { 
-        display: flex !important;
-        flex-wrap: nowrap !important; /* Não quebra linha */
-        overflow-x: auto !important; /* Permite rolar */
-        white-space: nowrap !important;
-        gap: 10px !important;
-        padding-bottom: 10px !important; /* Espaço para não cortar a sombra */
-        margin-bottom: 20px !important;
+        overflow-x: auto !important; 
+        flex-wrap: nowrap !important; 
+        padding-bottom: 10px;
+        white-space: nowrap;
     }
-    
-    /* Botões do Menu */
     div[role="radiogroup"] label {
-        flex: 0 0 auto !important; /* Tamanho fixo */
-        min-width: 100px !important;
-        text-align: center !important;
-        background-color: rgba(40,40,40,0.6) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 12px !important;
-        padding: 10px 15px !important;
-        color: #ccc !important;
-        transition: all 0.3s ease !important;
+        min-width: 90px !important; border-radius: 12px !important; border: 1px solid rgba(255,255,255,0.1) !important;
+        background: rgba(40,40,40,0.5) !important; color: #ccc !important;
     }
-    
-    div[role="radiogroup"] label:hover {
-        border-color: #D90429 !important;
-        color: white !important;
-    }
-    
-    /* Botão Selecionado */
     div[role="radiogroup"] label[data-checked="true"] { 
-        background: linear-gradient(135deg, #D90429, #8D021F) !important; 
-        color: white !important; 
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        box-shadow: 0 4px 10px rgba(217, 4, 41, 0.4) !important;
+        background: linear-gradient(135deg, #D90429, #8D021F) !important; color: white !important; border: none !important;
     }
 
-    /* Cards e Métricas */
+    /* Cards e Métricas (SEU DESIGN ORIGINAL) */
     .dash-card { 
-        border-radius: 16px; padding: 20px; color: white; margin-bottom: 15px; height: 130px;
+        border-radius: 16px; padding: 15px; color: white; margin-bottom: 15px; height: 120px;
         display: flex; flex-direction: column; justify-content: center; 
         background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-        backdrop-filter: blur(10px);
     }
+    .bg-gradient { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.0)); }
     
-    /* Bordas Coloridas dos Cards */
-    .bg-orange { border-left: 5px solid #ff9800; }
-    .bg-blue   { border-left: 5px solid #00b4db; }
-    .bg-red    { border-left: 5px solid #D90429; }
-    .bg-green  { border-left: 5px solid #39FF14; }
-    .bg-gold   { border-left: 5px solid #FFD700; }
+    /* Cores de Status */
+    .st-ok { color: #39FF14; font-weight: bold; }
+    .st-warn { color: #FFD700; font-weight: bold; }
+    .st-err { color: #D90429; font-weight: bold; }
 
     /* Botão Principal */
     div.stButton > button { 
         background: #D90429 !important; color: white; border-radius: 10px; height: 50px; font-weight: bold; border:none;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
     
-    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.9); text-align: center; padding: 10px; font-size: 12px; color: #666; z-index: 999; }
+    /* Footer */
+    .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.8); text-align: center; padding: 10px; font-size: 12px; color: #555; z-index: 999; }
 </style>
 """, unsafe_allow_html=True)
 
-# ==============================================================================
-# --- 3. FUNÇÕES DE BACKEND (Conexão e Dados) ---
-# ==============================================================================
-
-def check_password():
-    if st.session_state.get("password_correct", False): return True
-    if st.query_params.get("logado") == "true":
-        st.session_state["password_correct"] = True
-        return True
-    return False
+# --- 3. FUNÇÕES DE DADOS (BACKEND) ---
 
 def converter_valor(valor):
     if isinstance(valor, (int, float)): return float(valor)
@@ -195,34 +154,26 @@ def buscar_cliente(placa):
     except: pass
     return None
 
-# --- PDF GENERATOR ---
+# --- PDF ---
 def gerar_pdf(tipo, dados, imagens=None):
     pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, f"JM DETAIL - {tipo.upper()}", ln=True, align='C')
-    pdf.set_font("Arial", size=10); pdf.cell(0, 10, "Estetica Automotiva Premium | (75) 99830-3753", ln=True, align='C'); pdf.ln(5)
+    pdf.set_font("Arial", size=10); pdf.cell(0, 10, "Estetica Automotiva Premium", ln=True, align='C'); pdf.ln(5)
     pdf.set_font("Arial", "B", 11)
     texto_cli = f"CLIENTE: {dados.get('Cliente','')} | VEICULO: {dados.get('Veiculo','')} | DATA: {dados.get('Data','')}"
-    pdf.cell(0, 8, texto_cli.encode('latin-1','replace').decode('latin-1'), ln=True); pdf.ln(5)
-    if tipo == "Vistoria" and imagens:
-        pdf.cell(0, 10, "REGISTRO FOTOGRAFICO", ln=True, align='C')
-        x, y, w, h = 10, pdf.get_y(), 90, 65; col = 0
-        for tit, path in imagens.items():
-            if path and os.path.exists(path):
-                if y + h > 260: pdf.add_page(); y = 20
-                pdf.image(path, x=x + (col*95), y=y, w=w, h=h); col += 1
-                if col > 1: col=0; y += h + 10
-    elif tipo == "Orcamento":
-        pdf.set_fill_color(220,220,220); pdf.cell(140, 8, "Descricao", 1, 0, 'L', 1); pdf.cell(50, 8, "Valor", 1, 1, 'C', 1)
+    pdf.cell(0, 8, texto_cli.encode('latin-1','replace').decode('latin-1'), ln=True)
+    if tipo == "Orcamento":
+        pdf.ln(5); pdf.set_fill_color(220,220,220); pdf.cell(140, 8, "Descricao", 1, 0, 'L', 1); pdf.cell(50, 8, "Valor", 1, 1, 'C', 1)
         pdf.set_font("Arial", size=10); pdf.cell(140, 8, str(dados.get('Servicos','')).encode('latin-1','replace').decode('latin-1'), 1)
         pdf.cell(50, 8, formatar_moeda(dados.get('Total',0)), 1, 1, 'C')
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
-# --- 4. DEFINIÇÃO DAS PÁGINAS (IMPORTANTÍSSIMO: DEFINIR ANTES DE USAR) ---
+# --- 4. FUNÇÕES DAS PÁGINAS (DEFINIDAS ANTES DO USO) ---
 # ==============================================================================
 
-# 4.1 DASHBOARD
 def page_dashboard():
+    # DASHBOARD DO APP (1).PY - VISUAL "APPLE/NEON"
     st.markdown("## 📊 Painel de Controle (BI)")
     try:
         df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas")
@@ -245,39 +196,38 @@ def page_dashboard():
 
         lucro = (rec * 0.5) - desp - custo_f
         
-        # KPIS (VISUAL RESTAURADO)
+        # CARDS CUSTOMIZADOS (HTML/CSS QUE VOCÊ GOSTA)
         c1, c2, c3 = st.columns(3)
-        c1.markdown(f'<div class="dash-card bg-blue"><h3>FATURAMENTO</h3><h1>{formatar_moeda(rec)}</h1></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="dash-card bg-red"><h3>DESPESAS</h3><h1>{formatar_moeda(desp + custo_f)}</h1></div>', unsafe_allow_html=True)
+        c1.markdown(f'<div class="dash-card" style="border-left: 5px solid #00B4DB"><h3>FATURAMENTO</h3><h1>{formatar_moeda(rec)}</h1></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="dash-card" style="border-left: 5px solid #D90429"><h3>DESPESAS</h3><h1>{formatar_moeda(desp + custo_f)}</h1></div>', unsafe_allow_html=True)
         cor_lucro = "#39FF14" if lucro >= 0 else "#D90429"
-        c3.markdown(f'<div class="dash-card bg-green"><h3>LUCRO LÍQUIDO</h3><h1 style="color:{cor_lucro}">{formatar_moeda(lucro)}</h1></div>', unsafe_allow_html=True)
+        c3.markdown(f'<div class="dash-card" style="border-left: 5px solid {cor_lucro}"><h3>LUCRO LÍQUIDO</h3><h1 style="color:{cor_lucro}">{formatar_moeda(lucro)}</h1></div>', unsafe_allow_html=True)
 
         st.write("---")
         
-        # GRÁFICOS
+        # GRÁFICOS (MANTIDOS DA VERSÃO ESTÁVEL)
         if not df_v.empty:
             g1, g2 = st.columns(2)
             with g1:
-                st.markdown("### 🍩 Serviços Mais Vendidos")
+                st.markdown("### 🍩 Serviços")
                 if "Carro" in df_v.columns:
                     df_pie = df_v["Carro"].value_counts().reset_index().head(5)
-                    df_pie.columns = ["Serviço/Carro", "Qtd"]
-                    fig_pie = px.pie(df_pie, values="Qtd", names="Serviço/Carro", hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+                    df_pie.columns = ["Tipo", "Qtd"]
+                    fig_pie = px.pie(df_pie, values="Qtd", names="Tipo", hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
                     fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="white")
                     st.plotly_chart(fig_pie, use_container_width=True)
             with g2:
-                st.markdown("### 📈 Tendência Mensal")
+                st.markdown("### 📈 Tendência")
                 df_line = df_v.groupby(df_v["Data_dt"].dt.date)["Total_N"].sum().reset_index()
                 df_line.columns = ["Data", "Valor"]
-                # COR DO GRÁFICO: CINZA (ORIGINAL)
+                # CINZA CLARO (SEU PREFERIDO)
                 fig_line = px.line(df_line, x="Data", y="Valor", markers=True)
                 fig_line.update_traces(line_color="#E0E0E0", line_width=3)
                 fig_line.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,0.05)", font_color="white", xaxis_showgrid=False)
                 st.plotly_chart(fig_line, use_container_width=True)
 
-    except Exception as e: st.error(f"Erro no Dashboard: {e}")
+    except Exception as e: st.error(f"Erro Dash: {e}")
 
-# 4.2 AGENDA
 def page_agenda():
     st.markdown("## 📅 Agenda & Serviços")
     tab1, tab2 = st.tabs(["Novo", "Lista"])
@@ -304,16 +254,20 @@ def page_agenda():
         df = carregar_dados("Agendamentos")
         if not df.empty:
             for i, r in df.iterrows():
-                with st.expander(f"{r['Data']} - {r['Veiculo']} ({r['Cliente']})"):
+                # Card Expansível (Funcional e limpo)
+                titulo = f"{r['Data']} - {r['Veiculo']} ({r['Cliente']})"
+                if "Site" in str(r.get("Status","")): titulo = "🔔 " + titulo
+                
+                with st.expander(titulo):
                     st.write(f"**Serviços:** {r['Servicos']}")
+                    st.write(f"**Valor:** {r['Total']}")
                     c_ok, c_del = st.columns(2)
                     if c_ok.button("✅ Concluir", key=f"ok_{i}"):
                         atualizar_estoque_auto()
                         venda = r.to_dict(); venda["Status"] = "Concluído"; venda["Lucro Liquido"] = converter_valor(r["Total"])*0.5
                         salvar_no_google("Vendas", venda)
-                        st.toast("Serviço Concluído!"); t_sleep.sleep(1); st.rerun()
+                        st.toast("Concluído!"); t_sleep.sleep(1); st.rerun()
 
-# 4.3 VISTORIA
 def page_vistoria():
     st.markdown("## 📷 Vistoria Cautelar")
     st.info("Use a câmera do celular para registrar avarias.")
@@ -333,7 +287,6 @@ def page_vistoria():
                 st.download_button("BAIXAR PDF", pdf, "Vistoria.pdf", "application/pdf")
                 for p in paths.values(): os.remove(p)
 
-# 4.4 ESTOQUE
 def page_estoque():
     st.markdown("## 📦 Estoque de Produtos")
     try:
@@ -346,92 +299,91 @@ def page_estoque():
                 cor = "#39FF14" if perc > 0.2 else "#D90429"
                 with cols[i%2]:
                     st.markdown(f"""
-                    <div style="border:1px solid #333; padding:10px; border-radius:10px; margin-bottom:10px; background:rgba(255,255,255,0.05)">
+                    <div style="border:1px solid #333; padding:10px; border-radius:10px; margin-bottom:10px;">
                         <b>{r['Produto']}</b><br><small>{int(at)} ml</small>
-                        <div style="background:#444; height:5px; width:100%; margin-top:5px; border-radius:3px">
-                            <div style="background:{cor}; height:5px; width:{int(perc*100)}%; border-radius:3px"></div>
+                        <div style="background:#444; height:5px; width:100%; margin-top:5px;">
+                            <div style="background:{cor}; height:5px; width:{int(perc*100)}%;"></div>
                         </div>
                     </div>""", unsafe_allow_html=True)
     except: st.warning("Conexão necessária.")
 
-# 4.5 FINANCEIRO
 def page_financeiro():
     st.markdown("## 💰 Financeiro & Precificação")
     tab1, tab2 = st.tabs(["Caixa", "Calculadora"])
     with tab1:
-        st.write("Resumo do Mês (Ver Dashboard para Gráficos)")
+        st.write("Resumo do Mês (Ver Dashboard)")
+        if st.button("Baixar Relatório"): st.toast("Em breve")
     with tab2:
         st.markdown("### 🧮 Calculadora de Lucro Real")
         c1, c2 = st.columns(2)
-        prod_custo = c1.number_input("Custo Produtos (R$)", value=15.0)
-        hora_trab = c2.number_input("Horas Trabalhadas", value=2.0)
-        valor_hora = c1.number_input("Sua Hora (R$)", value=30.0)
-        preco_venda = st.number_input("Preço Cobrado (R$)", value=100.0)
+        prod_custo = c1.number_input("Custo Produtos (R$)", 15.0)
+        hora_trab = c2.number_input("Horas Trabalhadas", 2.0)
+        valor_hora = c1.number_input("Sua Hora (R$)", 30.0)
+        preco_venda = st.number_input("Preço Cobrado (R$)", 100.0)
         custo_total = prod_custo + (hora_trab * valor_hora)
         lucro = preco_venda - custo_total
         margem = (lucro / preco_venda) * 100 if preco_venda else 0
         if lucro > 0: st.success(f"Lucro: {formatar_moeda(lucro)} ({margem:.1f}%)")
         else: st.error(f"Prejuízo: {formatar_moeda(lucro)}")
 
-# 4.6 DESPESAS (ESSA FALTAVA!)
+# FUNÇÃO QUE FALTAVA (DESPESAS)
 def page_despesas():
-    st.markdown("## 📉 Lançar Despesas")
-    with st.form("form_despesa"):
-        desc = st.text_input("Descrição da Despesa")
-        val = st.number_input("Valor (R$)", min_value=0.0, step=10.0)
-        dt = st.date_input("Data", value=date.today())
-        if st.form_submit_button("LANÇAR DESPESA"):
-            if salvar_no_google("Despesas", {"Data": dt.strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val}):
-                st.success("Despesa salva!")
+    st.markdown("## 📉 Despesas")
+    with st.form("form_desp"):
+        desc = st.text_input("Descrição")
+        val = st.number_input("Valor", min_value=0.0)
+        if st.form_submit_button("Salvar"):
+            salvar_no_google("Despesas", {"Data": datetime.now().strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val})
+            st.success("Salvo!")
 
-# 4.7 HISTÓRICO (ESSA TAMBÉM!)
+# FUNÇÃO QUE FALTAVA (HISTÓRICO)
 def page_historico():
-    st.markdown("## 📜 Histórico de Clientes")
+    st.markdown("## 📜 Histórico")
     try:
         df = carregar_dados("Vendas")
-        if not df.empty:
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("Nenhuma venda registrada.")
-    except: st.error("Erro ao carregar histórico.")
+        st.dataframe(df)
+    except: st.error("Erro ao carregar.")
 
-# ==============================================================================
-# --- 5. CLIENTE (ÁREA PÚBLICA) ---
-# ==============================================================================
+# --- MÓDULO CLIENTE (Agendamento Seguro) ---
 def area_cliente():
     st.markdown("<br><br>", unsafe_allow_html=True)
     if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
-    st.markdown("<h2 style='text-align:center'>Agendamento Online</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center; color:#D90429'>JM DETAIL</h2>", unsafe_allow_html=True)
+    
     with st.container(border=True):
-        nome = st.text_input("Seu Nome")
-        carro = st.text_input("Modelo do Veículo")
-        tel = st.text_input("WhatsApp")
-        dt = st.date_input("Data Preferida", value=date.today())
-        hr = st.selectbox("Horário", ["08:00 - Manhã", "13:00 - Tarde"])
-        servs = st.multiselect("Serviços", ["Lavagem Simples", "Lavagem Detalhada", "Polimento", "Higienização"], placeholder="Selecione...")
+        st.info("Agendamento Online")
+        nome = st.text_input("Seu Nome *")
+        tel = st.text_input("Seu WhatsApp *")
+        carro = st.text_input("Modelo do Veículo *")
+        
+        c_dt, c_hr = st.columns(2)
+        dt = c_dt.date_input("Data Preferida", value=date.today())
+        hr = c_hr.selectbox("Horário *", ["08:00 - Manhã", "13:00 - Tarde"])
+        
+        servs = st.multiselect("Serviços de Interesse", ["Lavagem Simples", "Lavagem Detalhada", "Polimento", "Higienização"], placeholder="Selecione...")
         
         if st.button("SOLICITAR AGENDAMENTO", use_container_width=True):
-            if nome and tel:
-                dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": nome, "Telefone": tel, "Veiculo": carro, "Servicos": ", ".join(servs), "Status": "Pendente (Site)"}
+            if nome and tel and carro:
+                dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": nome, "Telefone": tel, "Veiculo": carro, "Servicos": ", ".join(servs), "Status": "Pendente (Site)", "Total": 0}
                 salvar_no_google("Agendamentos", dados)
-                st.success("Solicitação enviada! Entraremos em contato.")
-                link = f"https://wa.me/5575998303753?text=Ola, agendei meu {carro} pelo site para dia {dt.strftime('%d/%m')}."
-                st.markdown(f"<a href='{link}' target='_blank'><button style='background:#25D366; color:white; border:none; padding:10px; width:100%; border-radius:10px'>Finalizar no WhatsApp</button></a>", unsafe_allow_html=True)
+                st.success("Solicitação enviada!")
+                link = f"https://wa.me/5575998303753?text=Ola, fiz um agendamento pelo site para o carro {carro}."
+                st.markdown(f"<a href='{link}' target='_blank'><button style='background:#25D366; color:white; width:100%; border:none; padding:10px; border-radius:10px'>Finalizar no WhatsApp</button></a>", unsafe_allow_html=True)
+            else: st.warning("Preencha os campos obrigatórios.")
 
 # ==============================================================================
-# --- 6. LOGO E NAVEGAÇÃO (LÓGICA PRINCIPAL) ---
+# --- 5. LÓGICA PRINCIPAL (LOGIN) ---
 # ==============================================================================
 
-# Se estiver logado, mostra o Admin
-if check_password():
+if st.session_state.get("password_correct", False):
+    # ÁREA DO ADMIN (Igual ao seu site original)
     c_logo1, c_logo2, c_logo3 = st.columns([1,3,1])
     with c_logo2:
         if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
-    
-    # Menu Superior
+        else: st.markdown("<h1 style='text-align:center; color:#D90429'>JM DETAIL</h1>", unsafe_allow_html=True)
+
     menu = st.radio("", ["DASHBOARD", "AGENDA", "VISTORIA", "ESTOQUE", "FINANCEIRO", "DESPESAS", "HISTÓRICO"], horizontal=True, label_visibility="collapsed")
-    
-    # Controle de Páginas (AGORA TODAS DEFINIDAS)
+
     if menu == "DASHBOARD": page_dashboard()
     elif menu == "AGENDA": page_agenda()
     elif menu == "VISTORIA": page_vistoria()
@@ -440,19 +392,18 @@ if check_password():
     elif menu == "DESPESAS": page_despesas()
     elif menu == "HISTÓRICO": page_historico()
     
-    # Botão Sair
     with st.sidebar:
-        if st.button("SAIR DO SISTEMA"):
+        if st.button("SAIR"): 
             st.session_state["password_correct"] = False
             st.rerun()
 
-# Se NÃO estiver logado, mostra Área do Cliente + Botão de Login Discreto
 else:
+    # ÁREA DO CLIENTE (Pública)
     area_cliente()
-    st.write("---")
-    c1, c2, c3 = st.columns([1,2,1])
-    with c2:
-        with st.expander("🔒 Área Restrita"):
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        with st.expander("🔒 Área Restrita (Admin)"):
             pwd = st.text_input("Senha", type="password")
             if st.button("Entrar"):
                 try: s = st.secrets["app"]["password"]
