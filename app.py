@@ -15,7 +15,7 @@ import shutil
 st.set_page_config(page_title="JM DETAIL PRO", page_icon="💎", layout="wide", initial_sidebar_state="collapsed")
 
 # ==============================================================================
-# --- 2. CSS (O VISUAL DA SUA VERSÃO ESTÁVEL) ---
+# --- 2. CSS (VISUAL ESTÁVEL + CORREÇÃO MENU) ---
 # ==============================================================================
 st.markdown("""
 <style>
@@ -30,10 +30,9 @@ st.markdown("""
         background-color: #000000 !important; 
         background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 80%);
     }
-    .block-container { padding-top: 0.5rem; padding-bottom: 6rem; }
-    [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebar"] { display: none !important; }
-    #MainMenu, footer {visibility: hidden;}
-
+    .block-container { padding-top: 1rem; padding-bottom: 6rem; }
+    [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+    
     /* Inputs Glass */
     input[type="text"], input[type="number"], input[type="date"], input[type="time"], .stSelectbox > div > div, .stMultiSelect > div > div, .stTextArea > div > div {
         background-color: rgba(30, 30, 30, 0.4) !important;
@@ -42,25 +41,45 @@ st.markdown("""
         backdrop-filter: blur(5px) !important;
     }
     
-    /* Menu Superior (Correção de Rolagem) */
+    /* CORREÇÃO DO MENU SUPERIOR (ABAS) */
     div[role="radiogroup"] { 
-        display: flex !important; width: 100% !important; justify-content: flex-start !important; 
-        background: transparent !important; border: none !important; padding: 0 !important; gap: 8px !important; 
-        overflow-x: auto !important; flex-wrap: nowrap !important;
-        padding-bottom: 10px !important;
+        display: flex !important; 
+        flex-direction: row !important;
+        width: 100% !important; 
+        justify-content: flex-start !important; 
+        background: transparent !important; 
+        border: none !important; 
+        padding: 5px 0 15px 0 !important; /* Espaço embaixo para não cortar */
+        gap: 10px !important; 
+        overflow-x: auto !important; /* Permite rolar para o lado */
+        white-space: nowrap !important;
     }
     div[role="radiogroup"] label {
-        flex: 0 0 auto !important;
-        min-width: 90px !important; background-color: rgba(30, 30, 30, 0.4) !important; backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; padding: 12px 15px !important; border-radius: 12px !important; 
-        transition: all 0.2s ease !important; margin: 0 !important; color: #aaa !important; font-weight: 500 !important; font-size: 14px !important; 
-        white-space: nowrap !important; display: flex; align-items: center; justify-content: center !important;
+        flex: 0 0 auto !important; /* Não estica, mantém tamanho fixo */
+        min-width: 100px !important; 
+        background-color: rgba(40, 40, 40, 0.6) !important; 
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important; 
+        padding: 12px 20px !important; 
+        border-radius: 12px !important; 
+        margin: 0 !important; 
+        color: #ddd !important; 
+        font-weight: 600 !important; 
+        font-size: 14px !important; 
+        display: flex; align-items: center; justify-content: center !important;
+        cursor: pointer !important;
     }
-    div[role="radiogroup"] label:hover { border-color: #D90429 !important; color: white !important; background-color: rgba(217, 4, 41, 0.15) !important; }
+    div[role="radiogroup"] label:hover { 
+        border-color: #D90429 !important; 
+        color: white !important; 
+        background-color: rgba(217, 4, 41, 0.2) !important; 
+    }
     div[role="radiogroup"] label[data-checked="true"] { 
-        background: linear-gradient(135deg, rgba(217, 4, 41, 0.8), rgba(141, 2, 31, 0.8)) !important; 
-        backdrop-filter: blur(12px) !important; color: white !important; border-color: rgba(255,255,255,0.2) !important; 
-        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3) !important; font-weight: 700 !important;
+        background: linear-gradient(135deg, rgba(217, 4, 41, 0.9), rgba(141, 2, 31, 0.9)) !important; 
+        backdrop-filter: blur(12px) !important; 
+        color: white !important; 
+        border-color: rgba(255,255,255,0.3) !important; 
+        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.4) !important;
     }
     
     /* Cards */
@@ -88,6 +107,14 @@ st.markdown("""
 
     .footer { position: fixed; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); color: #666; text-align: center; padding: 10px; font-size: 12px; border-top: 1px solid #222; z-index: 9999; }
     div.stButton > button { background-color: #D90429 !important; color: white !important; border-radius: 10px !important; font-weight: 700 !important; border: none !important; height: 45px !important; box-shadow: 0 4px 10px rgba(217, 4, 41, 0.3); }
+    
+    /* Alerta de Estoque */
+    .stock-alert {
+        background-color: rgba(217, 4, 41, 0.2); border: 1px solid #D90429; color: #ffcccc;
+        padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(217, 4, 41, 0); } 100% { box-shadow: 0 0 0 0 rgba(217, 4, 41, 0); } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -110,7 +137,7 @@ def formatar_moeda(valor):
     except: return "R$ 0,00"
 
 def conectar_google_sheets():
-    # SEU ID DA PLANILHA AQUI (Se não estiver puxando do secrets)
+    # ID ATUALIZADO PELO USUÁRIO
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg" 
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
@@ -165,7 +192,6 @@ def atualizar_estoque_auto():
                 for i, h in enumerate(headers):
                     if "atual" in h: idx_atual = i
                     if "gasto" in h: idx_gasto = i
-                
                 if idx_atual != -1 and idx_gasto != -1:
                     for i in range(1, len(dados)):
                         try:
@@ -316,7 +342,6 @@ def gerar_relatorio_mensal(df_mes, resumo):
 # ==============================================================================
 # --- 5. DEFINIÇÃO DAS PÁGINAS (ADMIN) ---
 # ==============================================================================
-# IMPORTANTE: Definir as funções ANTES de chamá-las no menu area_admin
 
 def page_dashboard():
     hoje = datetime.now()
@@ -611,6 +636,15 @@ def page_estoque():
     except Exception as e:
         st.error(f"Erro ao carregar estoque: {e}")
 
+def page_despesas():
+    st.markdown('## <i class="bi bi-receipt" style="color: #D90429;"></i> Despesas', unsafe_allow_html=True)
+    with st.form("form_desp"):
+        desc = st.text_input("Descrição")
+        val = st.number_input("Valor", min_value=0.0)
+        if st.form_submit_button("Lançar"):
+            salvar_no_google("Despesas", {"Data": datetime.now().strftime("%d/%m/%Y"), "Descricao": desc, "Valor": val})
+            st.success("Salvo!")
+
 def page_vistoria():
     st.markdown('## <i class="bi bi-camera-fill" style="color: #39FF14;"></i> Vistoria de Entrada (Cautelar)', unsafe_allow_html=True)
     
@@ -782,7 +816,7 @@ def page_historico():
     except Exception as e: st.error(f"Erro no Histórico: {e}")
 
 # ==============================================================================
-# --- 7. ÁREA PÚBLICA (MODO CLIENTE - REFINADO) ---
+# --- 6. ÁREA PÚBLICA (MODO CLIENTE - REFINADO) ---
 # ==============================================================================
 def area_cliente():
     st.markdown("<br>", unsafe_allow_html=True)
@@ -846,10 +880,10 @@ def area_cliente():
                 st.warning("⚠️ Preencha Nome, WhatsApp e Veículo.")
 
 # ==============================================================================
-# --- 8. ÁREA ADMIN (CONTROLADOR) ---
+# --- 7. ÁREA ADMIN (CONTROLADOR) ---
 # ==============================================================================
 def area_admin():
-    # MENU ORIGINAL COM A LÓGICA ANTIGA
+    # MENU ORIGINAL COM A LÓGICA ANTIGA E CORRIGIDO SCROLL
     menu_opcoes = ["DASHBOARD", "AGENDA", "VISTORIA", "ESTOQUE", "FINANCEIRO", "DESPESAS", "HISTÓRICO"]
     menu_selecionado = st.radio("Navegação", menu_opcoes, horizontal=True, label_visibility="collapsed")
     st.write("---")
@@ -871,7 +905,7 @@ def area_admin():
         page_historico()
 
 # ==============================================================================
-# --- 9. CONTROLE DE FLUXO (PONTO DE ENTRADA) ---
+# --- 8. CONTROLE DE FLUXO (PONTO DE ENTRADA) ---
 # ==============================================================================
 
 if st.session_state.get("password_correct", False):
