@@ -660,19 +660,50 @@ def page_agendamento():
             if not df_a.empty:
                 for i, r in df_a.iterrows():
                     val_total = converter_valor(r.get('Total', 0))
-                    destaque = "border: 1px solid #39FF14;" if "Site" in str(r.get("Status","")) else ""
                     
-                    with st.expander(f"{r['Data']} | {r['Veiculo']} - {r['Cliente']}"):
-                        st.markdown(f"**Serviços:** {r['Servicos']}")
-                        if "Site" in str(r.get("Status","")): st.warning("🔔 Veio pelo Site!")
+                    # Identifica se veio do site
+                    is_site = "Site" in str(r.get("Status",""))
+                    titulo = f"{r['Data']} | {r['Veiculo']} - {r['Cliente']}"
+                    if is_site: titulo = "🔔 " + titulo
+                    
+                    with st.expander(titulo):
+                        st.write(f"**Serviços:** {r['Servicos']}")
+                        st.write(f"**Obs:** {r.get('Obs','')}")
+                        
+                        # --- NOVIDADE: Campo para você corrigir a placa antes de finalizar ---
+                        col_p, col_v = st.columns(2)
+                        nova_placa = col_p.text_input("Confirmar Placa:", value=r.get("Placa", ""), key=f"placa_{i}")
+                        novo_valor = col_v.number_input("Valor Final (R$):", value=val_total, key=f"val_{i}")
+                        
                         c_ok, c_del = st.columns(2)
-                        if c_ok.button("✅ Concluir", key=f"ok_{i}"):
+                        
+                        # Botão Concluir agora usa os valores corrigidos (Placa e Valor)
+                        if c_ok.button("✅ Concluir Serviço", key=f"ok_{i}", use_container_width=True):
                             atualizar_estoque_auto()
-                            venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Total": val_total, "Status": "Concluído"}
+                            # Salva com a placa e valor que você acabou de confirmar
+                            venda = {
+                                "Data": r["Data"], 
+                                "Cliente": r["Cliente"], 
+                                "Telefone": r.get("Telefone", ""),
+                                "Carro": r["Veiculo"],
+                                "Placa": nova_placa,  # Usa a placa corrigida
+                                "Serviços": r["Servicos"],
+                                "Total": novo_valor,  # Usa o valor corrigido
+                                "Status": "Concluído",
+                                "Lucro Liquido": novo_valor * 0.5 
+                            }
                             salvar_no_google("Vendas", venda)
-                            excluir_agendamento(i); st.rerun()
-                        if c_del.button("🗑️", key=f"del_{i}"): excluir_agendamento(i); st.rerun()
-        except: pass
+                            excluir_agendamento(i)
+                            st.toast("Serviço Concluído e Faturado!")
+                            t_sleep.sleep(1)
+                            st.rerun()
+                            
+                        if c_del.button("🗑️ Excluir", key=f"del_{i}"): 
+                            excluir_agendamento(i)
+                            st.rerun()
+            else:
+                st.info("Nenhum agendamento pendente.")
+        except Exception as e: st.error(f"Erro na lista: {e}")
 
 def page_vistoria():
     # Mantendo a Vistoria original simples
