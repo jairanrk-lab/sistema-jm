@@ -137,7 +137,7 @@ def formatar_moeda(valor):
     except: return "R$ 0,00"
 
 def conectar_google_sheets():
-    # ID ATUALIZADO PELO USUÁRIO
+    # ID ATUALIZADO PELO USUÁRIO (Preencha aqui se ainda não tiver feito)
     ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg" 
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
@@ -149,6 +149,7 @@ def conectar_google_sheets():
         else: return None
         return client.open_by_key(ID_FIXO)
     except Exception as e:
+        st.error(f"Erro Conexão Google: {e}")
         return None
 
 def carregar_dados(aba):
@@ -172,13 +173,18 @@ def salvar_no_google(aba, linha_dados):
         ws.append_row(nova_linha)
         return True, "Sucesso"
     except Exception as e: 
+        st.error(f"Erro ao salvar: {e}")
         return False, str(e)
 
 def excluir_agendamento(indice_linha):
     sheet = conectar_google_sheets()
     if sheet is None: return False
     try: ws = sheet.worksheet("Agendamentos"); ws.delete_rows(indice_linha + 2); return True
-    except Exception as e: return False
+    except Exception as e: 
+        st.error(f"Erro ao excluir: {e}")
+        return False
+
+# --- FUNÇÕES DE ESTOQUE E CUSTO ---
 
 def atualizar_estoque_auto():
     sheet = conectar_google_sheets()
@@ -192,6 +198,7 @@ def atualizar_estoque_auto():
                 for i, h in enumerate(headers):
                     if "atual" in h: idx_atual = i
                     if "gasto" in h: idx_gasto = i
+                
                 if idx_atual != -1 and idx_gasto != -1:
                     for i in range(1, len(dados)):
                         try:
@@ -275,68 +282,166 @@ def buscar_cliente_por_placa(placa_busca):
     return None
 
 # --- GERAÇÃO DE PDFS ---
+
 def gerar_pdf_orcamento(dados):
-    pdf = FPDF(); pdf.add_page()
+    pdf = FPDF()
+    pdf.add_page()
     logo_file = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
     if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
+    
     def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
-    pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
-    pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt("Estética Automotiva Premium | (75) 99830-3753"), ln=True, align='C'); pdf.ln(10)
-    pdf.set_font("Arial", "B", 12); pdf.cell(0, 10, txt(f"CLIENTE: {dados['Cliente']}"), ln=True)
-    pdf.cell(0, 10, txt(f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True); pdf.ln(5)
-    pdf.set_fill_color(220, 220, 220); pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1); pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt("JM DETAIL - ORÇAMENTO"), ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, txt("Estética Automotiva Premium | (75) 99830-3753"), ln=True, align='C')
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt(f"CLIENTE: {dados['Cliente']}"), ln=True)
+    pdf.cell(0, 10, txt(f"VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
+    pdf.cell(0, 10, txt(f"DATA: {dados['Data']}"), ln=True)
+    pdf.ln(5)
+    
+    pdf.set_fill_color(220, 220, 220)
+    pdf.cell(140, 10, txt("Descrição do Serviço"), 1, 0, 'L', 1)
+    pdf.cell(50, 10, txt("Valor"), 1, 1, 'C', 1)
+    
     pdf.set_font("Arial", size=12)
     if 'Itens' in dados and isinstance(dados['Itens'], list):
-        for item in dados['Itens']: pdf.cell(140, 10, txt(item['desc']), 1); pdf.cell(50, 10, txt(f"R$ {item['val']:.2f}"), 1, 1, 'C')
+        for item in dados['Itens']:
+            pdf.cell(140, 10, txt(item['desc']), 1)
+            pdf.cell(50, 10, txt(f"R$ {item['val']:.2f}"), 1, 1, 'C')
     else:
         for s in str(dados['Servicos']).split(','):
-            if s.strip(): pdf.cell(140, 10, txt(s.strip()), 1); pdf.cell(50, 10, "", 1, 1, 'C') 
-    pdf.ln(5); pdf.set_font("Arial", "B", 14); pdf.cell(140, 10, "VALOR TOTAL", 1, 0, 'R'); pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
+            if s.strip():
+                pdf.cell(140, 10, txt(s.strip()), 1)
+                pdf.cell(50, 10, "", 1, 1, 'C') 
+            
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(140, 10, "VALOR TOTAL", 1, 0, 'R')
+    pdf.cell(50, 10, txt(f"R$ {dados['Total']:.2f}"), 1, 1, 'C')
+    
+    pdf.ln(20)
+    sig_file = next((f for f in ["assinatura.png", "Assinatura.png"] if os.path.exists(f)), None)
+    if sig_file: 
+        x_centered = (210 - 50) / 2
+        pdf.image(sig_file, x=x_centered, y=pdf.get_y() - 15, w=50)
+    
+    pdf.cell(0, 10, "________________________________________", ln=True, align='C')
+    pdf.cell(0, 5, txt("Jairan Jesus Matos - JM Detail"), ln=True, align='C')
     return pdf.output(dest="S").encode("latin-1")
 
 def gerar_pdf_vistoria(dados, fotos_paths):
-    pdf = FPDF(); pdf.add_page()
+    pdf = FPDF()
+    pdf.add_page()
     logo_file = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
     if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
+    
     def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
-    pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt("TERMO DE VISTORIA - ENTRADA"), ln=True, align='C')
-    pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt("JM DETAIL - Estética Automotiva Premium"), ln=True, align='C'); pdf.ln(5)
-    pdf.set_font("Arial", "B", 11); pdf.cell(0, 8, txt(f"CLIENTE: {dados['Cliente']} | VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
-    pdf.cell(0, 8, txt(f"DATA: {dados['Data']} | COMBUSTÍVEL: {dados['Combustivel']}%"), ln=True); pdf.ln(5)
-    pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, txt("AVARIAS / OBSERVAÇÕES REGISTRADAS:"), ln=True); pdf.set_font("Arial", size=10)
-    if dados["Avarias"]: pdf.multi_cell(0, 6, txt(", ".join(dados["Avarias"])))
-    else: pdf.cell(0, 6, txt("Nenhuma avaria declarada."), ln=True)
-    if dados["Pertences"]: pdf.ln(2); pdf.set_font("Arial", "B", 10); pdf.cell(0, 8, txt("PERTENCES NO VEÍCULO:"), ln=True); pdf.set_font("Arial", size=10); pdf.multi_cell(0, 6, txt(dados["Pertences"]))
-    pdf.ln(5); pdf.set_font("Arial", "B", 12); pdf.cell(0, 10, txt("REGISTRO FOTOGRÁFICO"), ln=True, align='C'); pdf.ln(5)
-    x_start, y_start, w_img, h_img, col = 10, pdf.get_y(), 90, 65, 0
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt("TERMO DE VISTORIA - ENTRADA"), ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, txt("JM DETAIL - Estética Automotiva Premium"), ln=True, align='C')
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 8, txt(f"CLIENTE: {dados['Cliente']} | VEÍCULO: {dados['Veiculo']} | PLACA: {dados['Placa']}"), ln=True)
+    pdf.cell(0, 8, txt(f"DATA: {dados['Data']} | COMBUSTÍVEL: {dados['Combustivel']}%"), ln=True)
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, txt("AVARIAS / OBSERVAÇÕES REGISTRADAS:"), ln=True)
+    pdf.set_font("Arial", size=10)
+    if dados["Avarias"]:
+        pdf.multi_cell(0, 6, txt(", ".join(dados["Avarias"])))
+    else:
+        pdf.cell(0, 6, txt("Nenhuma avaria declarada."), ln=True)
+    
+    if dados["Pertences"]:
+        pdf.ln(2)
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 8, txt("PERTENCES NO VEÍCULO:"), ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 6, txt(dados["Pertences"]))
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt("REGISTRO FOTOGRÁFICO"), ln=True, align='C')
+    pdf.ln(5)
+    
+    x_start = 10; y_start = pdf.get_y(); w_img = 90; h_img = 65 
+    col = 0
     for titulo, path in fotos_paths.items():
         if path and os.path.exists(path):
-            if y_start + h_img > 250: pdf.add_page(); y_start = 20
-            x = x_start + (col * 95); pdf.image(path, x=x, y=y_start, w=w_img, h=h_img)
-            pdf.set_xy(x, y_start + h_img + 1); pdf.set_font("Arial", size=8); pdf.cell(w_img, 5, txt(titulo), 0, 0, 'C')
+            if y_start + h_img > 250:
+                pdf.add_page(); y_start = 20
+            x = x_start + (col * 95)
+            pdf.image(path, x=x, y=y_start, w=w_img, h=h_img)
+            pdf.set_xy(x, y_start + h_img + 1)
+            pdf.set_font("Arial", size=8)
+            pdf.cell(w_img, 5, txt(titulo), 0, 0, 'C')
             col += 1
             if col > 1: col = 0; y_start += h_img + 10
+    
+    pdf.set_y(-35)
+    pdf.set_font("Arial", size=8)
+    pdf.cell(0, 5, txt("Declaro estar ciente do estado do veículo conforme vistoria acima."), ln=True, align='C')
+    pdf.ln(5)
+    
+    y_base = pdf.get_y()
+    sig_file = next((f for f in ["assinatura.png", "Assinatura.png"] if os.path.exists(f)), None)
+    if sig_file: pdf.image(sig_file, x=30, y=y_base, w=35)
+    
+    pdf.line(20, y_base + 15, 90, y_base + 15)   
+    pdf.line(120, y_base + 15, 190, y_base + 15) 
+    pdf.set_xy(20, y_base + 16); pdf.cell(70, 5, txt("Vistoriador (JM Detail)"), 0, 0, 'C')
+    pdf.set_xy(120, y_base + 16); pdf.cell(70, 5, txt("Cliente / Responsável"), 0, 0, 'C')
+
     return pdf.output(dest="S").encode("latin-1")
 
 def gerar_relatorio_mensal(df_mes, resumo):
-    pdf = FPDF(); pdf.add_page()
+    pdf = FPDF()
+    pdf.add_page()
     logo_file = next((f for f in ["logo.png", "Logo.png", "LOGO.png"] if os.path.exists(f)), None)
     if logo_file: pdf.image(logo_file, x=10, y=8, w=35)
+    
     def txt(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
-    pdf.set_font("Arial", "B", 16); pdf.cell(0, 10, txt("JM DETAIL - RELATÓRIO MENSAL"), ln=True, align='C')
-    pdf.set_font("Arial", size=10); pdf.cell(0, 10, txt(f"Período: {resumo['mes']}"), ln=True, align='C'); pdf.ln(10)
-    pdf.set_font("Arial", "B", 12); pdf.cell(0, 10, txt("RESUMO FINANCEIRO"), ln=True)
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, txt("JM DETAIL - RELATÓRIO MENSAL"), ln=True, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, txt(f"Período: {resumo['mes']}"), ln=True, align='C')
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, txt("RESUMO FINANCEIRO"), ln=True)
     pdf.set_font("Arial", size=12)
     pdf.cell(100, 8, txt("Faturamento Bruto:"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['faturamento'])), 0, 1)
     pdf.cell(100, 8, txt("Despesas Totais:"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['despesas'])), 0, 1)
     pdf.cell(100, 8, txt("Comissões (Total):"), 0); pdf.cell(0, 8, txt(formatar_moeda(resumo['comissoes'])), 0, 1)
-    pdf.set_font("Arial", "B", 12); pdf.cell(100, 10, txt("LUCRO LÍQUIDO FINAL:"), 0); pdf.cell(0, 10, txt(formatar_moeda(resumo['lucro'])), 0, 1); pdf.ln(10)
-    pdf.set_font("Arial", "B", 10); pdf.set_fill_color(200, 200, 200)
-    pdf.cell(30, 8, "DATA", 1, 0, 'C', 1); pdf.cell(60, 8, "CLIENTE", 1, 0, 'L', 1); pdf.cell(60, 8, "VEÍCULO", 1, 0, 'L', 1); pdf.cell(40, 8, "VALOR", 1, 1, 'C', 1)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(100, 10, txt("LUCRO LÍQUIDO FINAL:"), 0); pdf.cell(0, 10, txt(formatar_moeda(resumo['lucro'])), 0, 1)
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(30, 8, "DATA", 1, 0, 'C', 1)
+    pdf.cell(60, 8, "CLIENTE", 1, 0, 'L', 1)
+    pdf.cell(60, 8, "VEÍCULO", 1, 0, 'L', 1)
+    pdf.cell(40, 8, "VALOR", 1, 1, 'C', 1)
+    
     pdf.set_font("Arial", size=9)
     for _, r in df_mes.iterrows():
-        dt = r['Data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['Data_dt']) else str(r['Data']); val = formatar_moeda(converter_valor(r['Total']))
-        pdf.cell(30, 7, txt(dt), 1, 0, 'C'); pdf.cell(60, 7, txt(str(r['Cliente'])[:25]), 1, 0, 'L'); pdf.cell(60, 7, txt(str(r['Carro'])[:25]), 1, 0, 'L'); pdf.cell(40, 7, txt(val), 1, 1, 'C')
+        dt = r['Data_dt'].strftime('%d/%m/%Y') if pd.notnull(r['Data_dt']) else str(r['Data'])
+        val = formatar_moeda(converter_valor(r['Total']))
+        pdf.cell(30, 7, txt(dt), 1, 0, 'C')
+        pdf.cell(60, 7, txt(str(r['Cliente'])[:25]), 1, 0, 'L')
+        pdf.cell(60, 7, txt(str(r['Carro'])[:25]), 1, 0, 'L')
+        pdf.cell(40, 7, txt(val), 1, 1, 'C')
+        
     return pdf.output(dest="S").encode("latin-1")
 
 # ==============================================================================
@@ -636,6 +741,7 @@ def page_estoque():
     except Exception as e:
         st.error(f"Erro ao carregar estoque: {e}")
 
+# --- AQUI ESTAVA FALTANDO A FUNÇÃO page_despesas ---
 def page_despesas():
     st.markdown('## <i class="bi bi-receipt" style="color: #D90429;"></i> Despesas', unsafe_allow_html=True)
     with st.form("form_desp"):
