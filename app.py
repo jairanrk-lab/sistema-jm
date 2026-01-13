@@ -55,7 +55,6 @@ st.markdown("""
     @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
     
     /* --- CORREÇÃO DO BUG DA SETINHA --- */
-    /* Aplica a fonte Apple APENAS em elementos de texto, deixando os ícones em paz */
     html, body, p, h1, h2, h3, h4, h5, h6, li, a, button, input, textarea, label, .stTextInput, .stNumberInput, .stSelectbox {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
@@ -128,7 +127,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNÇÕES AUXILIARES ---
+# --- FUNÇÕES AUXILIARES E DE BANCO DE DADOS ---
 
 def converter_valor(valor):
     if isinstance(valor, (int, float)): return float(valor)
@@ -193,6 +192,57 @@ def excluir_agendamento(indice_linha):
         st.error(f"Erro ao excluir: {e}")
         return False
 
+# --- FUNÇÕES DAS FASES 2 E 3 (ESTOQUE E CUSTO) ---
+
+def atualizar_estoque_auto():
+    """ FASE 2: Desconta produtos automaticamente baseado na aba Estoque """
+    sheet = conectar_google_sheets()
+    if sheet:
+        try:
+            ws = sheet.worksheet("Estoque")
+            # Pega todos os dados
+            dados = ws.get_all_values() # Retorna lista de listas
+            if len(dados) > 1:
+                # Descobre indices das colunas
+                headers = [h.lower().strip() for h in dados[0]]
+                idx_atual = -1
+                idx_gasto = -1
+                
+                # Procura colunas parecidas com 'atual' e 'gasto'
+                for i, h in enumerate(headers):
+                    if "atual" in h: idx_atual = i
+                    if "gasto" in h: idx_gasto = i
+                
+                if idx_atual != -1 and idx_gasto != -1:
+                    # Atualiza linha a linha
+                    updates = []
+                    for i in range(1, len(dados)):
+                        try:
+                            atual = float(dados[i][idx_atual].replace(",", ".") or 0)
+                            gasto = float(dados[i][idx_gasto].replace(",", ".") or 0)
+                            if gasto > 0:
+                                novo_val = max(0, atual - gasto)
+                                # Prepara update (Linha, Coluna, Valor)
+                                ws.update_cell(i + 1, idx_atual + 1, novo_val)
+                        except: pass
+        except: pass # Se a aba não existir, segue a vida
+
+@st.cache_data(ttl=300)
+def obter_custo_fixo():
+    """ FASE 3: Lê o Custo Fixo da aba Config """
+    try:
+        sheet = conectar_google_sheets()
+        if sheet:
+            ws = sheet.worksheet("Config")
+            df = pd.DataFrame(ws.get_all_records())
+            # Procura chave 'CustoFixo' na coluna Chave
+            if "Chave" in df.columns and "Valor" in df.columns:
+                res = df[df["Chave"].astype(str).str.lower() == "custofixo"]
+                if not res.empty:
+                    return converter_valor(res.iloc[0]["Valor"])
+    except: pass
+    return 0.0 # Padrão se não achar
+
 @st.cache_data(ttl=60)
 def carregar_catalogo():
     try:
@@ -205,7 +255,32 @@ def carregar_catalogo():
                 for c in cols_num: df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
                 return df
     except: pass
-    return pd.DataFrame() # Fallback vazio
+    return pd.DataFrame() 
+
+@st.cache_data(ttl=300) 
+def carregar_lista_avarias():
+    padrao = [
+        "Capô: Risco/Arranhão", "Capô: Amassado", "Capô: Pintura Queimada",
+        "Teto: Pintura Queimada", "Teto: Amassado (Granizo)",
+        "Para-brisa: Trincado/Estrela", "Vidros Laterais: Risco/Mancha",
+        "Para-choque Diant: Ralado", "Para-choque Tras: Ralado",
+        "Lateral Esq (Motorista): Risco", "Lateral Esq (Motorista): Amassado",
+        "Lateral Dir (Passageiro): Risco", "Lateral Dir (Passageiro): Amassado",
+        "Retrovisor Esq: Quebrado", "Retrovisor Dir: Quebrado",
+        "Faróis: Quebrados/Amarelados", "Rodas: Raladas", "Pneus: Carecas",
+        "Interior: Banco Rasgado/Sujo", "Chuva Ácida (Geral)"
+    ]
+    try:
+        sheet = conectar_google_sheets()
+        if sheet:
+            ws = sheet.worksheet("Config") 
+            df = pd.DataFrame(ws.get_all_records())
+            if not df.empty and "Avarias" in df.columns:
+                lista_planilha = df["Avarias"].dropna().tolist()
+                lista_planilha = [x for x in lista_planilha if str(x).strip()] 
+                if lista_planilha: return lista_planilha
+    except: pass
+    return padrao 
 
 def obter_icone_e_classe(cat):
     if not isinstance(cat, str): return '<i class="bi bi-car-front-fill"></i>', 'b-carro'
@@ -460,14 +535,18 @@ def page_dashboard():
             df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
             if "Valor" in df_d.columns: despesa_mes = df_d_mes["Valor"].apply(converter_valor).sum()
         
-        lucro_final = lucro_operacional - despesa_mes; META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
+        # FASE 3: Custo Fixo Automático
+        custo_fixo = obter_custo_fixo()
+        lucro_final = lucro_operacional - despesa_mes - custo_fixo
+        
+        META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
         st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1: st.markdown(f'<div class="dash-card bg-orange"><i class="bi bi-hourglass-split card-icon-bg"></i><h4>PENDENTES (GERAL)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(pendente_total)}</div><small>{count_p} carros na fila</small></div>', unsafe_allow_html=True)
         with c2: st.markdown(f'<div class="dash-card bg-blue"><i class="bi bi-currency-dollar card-icon-bg"></i><h4>FATURAMENTO (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(receita_mes)}</div><small>Ref: {nome_meses[mes_atual]}</small></div>', unsafe_allow_html=True)
         c3, c4 = st.columns(2)
-        with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS (MÊS)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes)}</div><small>Gastos externos</small></div>', unsafe_allow_html=True)
-        with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Despesas</small></div>', unsafe_allow_html=True)
+        with c3: st.markdown(f'<div class="dash-card bg-red"><i class="bi bi-graph-down-arrow card-icon-bg"></i><h4>DESPESAS + FIXO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(despesa_mes + custo_fixo)}</div><small>Ext: {formatar_moeda(despesa_mes)} | Fixo: {formatar_moeda(custo_fixo)}</small></div>', unsafe_allow_html=True)
+        with c4: st.markdown(f'<div class="dash-card {"bg-green" if lucro_final >= 0 else "bg-red"}"><i class="bi bi-wallet2 card-icon-bg"></i><h4>LUCRO LÍQUIDO</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_final)}</div><small>50% Bruto - Total Despesas</small></div>', unsafe_allow_html=True)
         st.write("---")
         col_graf, col_prox = st.columns([2, 1])
         with col_graf:
@@ -513,8 +592,12 @@ def page_financeiro():
         c1, c2, c3 = st.columns(3)
         c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
         c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
-        lucro_liq_real = (total_bruto * 0.50) - total_despesas
-        c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado tudo)</small></div>', unsafe_allow_html=True)
+        
+        # LUCRO REAL = (Bruto * 0.5) - Despesas - Custo Fixo
+        custo_fixo = obter_custo_fixo()
+        lucro_liq_real = (total_bruto * 0.50) - total_despesas - custo_fixo
+        
+        c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado Fixo de {formatar_moeda(custo_fixo)})</small></div>', unsafe_allow_html=True)
         st.write("---")
         st.markdown("### 📋 Detalhe do que falta pagar")
         if not df_v.empty:
@@ -594,6 +677,9 @@ def page_agendamento():
                     c_ok, c_zap, c_del = st.columns([2, 1, 1])
                     with c_ok:
                         if st.button("✅ Concluir", key=f"ok_{i}", use_container_width=True):
+                            # FASE 2: Desconta do Estoque Automaticamente
+                            atualizar_estoque_auto()
+                            
                             t = converter_valor(r["Total"]); f, c = t * 0.10, (t * 0.40 if "Equipe" in r["Executor"] else 0.0)
                             venda = {"Data": r["Data"], "Cliente": r["Cliente"], "Telefone": r.get("Telefone", ""), "Carro": r["Veiculo"], "Placa": r["Placa"], "Serviços": r["Servicos"], "Total": t, "Status": "Concluído", "Funcionario": r["Executor"], "Valor Comissao": c, "Fundo Caixa": f, "Lucro Liquido": t-f-c, "Status Comissao": "Pendente", "Categoria": r.get("Categoria", "")}
                             salvar_no_google("Vendas", venda); excluir_agendamento(i); st.rerun()
@@ -655,25 +741,13 @@ def page_vistoria():
         st.markdown("### 1. Estado Geral & Avarias")
         combustivel = st.slider("Nível de Combustível (%)", 0, 100, 50, step=5)
         
-        # LISTA COMPLETA DE AVARIAS
-        lista_avarias = [
-            "Capô: Risco/Arranhão", "Capô: Amassado", "Capô: Pintura Queimada",
-            "Teto: Pintura Queimada", "Teto: Amassado (Granizo/Outros)",
-            "Para-brisa: Trincado/Estrela", "Vidros Laterais: Risco/Mancha",
-            "Para-choque Diant: Ralado/Quebrado", "Para-choque Tras: Ralado/Quebrado",
-            "Lateral Esq (Motorista): Risco", "Lateral Esq (Motorista): Amassado",
-            "Lateral Dir (Passageiro): Risco", "Lateral Dir (Passageiro): Amassado",
-            "Retrovisor Esq: Quebrado/Ralado", "Retrovisor Dir: Quebrado/Ralado",
-            "Faróis: Quebrados/Trincados", "Faróis: Amarelados/Foscos",
-            "Rodas/Calotas: Raladas (Meio-fio)", "Pneus: Carecas/Murchos",
-            "Interior: Banco Rasgado/Furado", "Interior: Teto Sujo/Descolando",
-            "Interior: Painel Riscado/Quebrado", "Manchas de Chuva Ácida (Geral)"
-        ]
+        # LISTA DINÂMICA (Puxa da Planilha ou usa Padrão)
+        lista_avarias = carregar_lista_avarias()
         
         avarias = st.multiselect(
             "Marcar Avarias Visíveis:", 
             options=lista_avarias,
-            placeholder="Selecione as avarias na lista..."  # <--- TRADUÇÃO
+            placeholder="Selecione as avarias na lista..."
         )
         
         pertences = st.text_area("Pertences no Veículo (Opcional)", placeholder="Ex: Óculos, Pen Drive, Cadeirinha de bebê...")
@@ -760,36 +834,92 @@ def page_historico():
     st.markdown('## <i class="bi bi-clock-history"></i> Histórico & CRM', unsafe_allow_html=True)
     try:
         df = carregar_dados("Vendas")
+        
         if not df.empty:
-            df["Total_Num"] = df["Total"].apply(converter_valor); df['Data_dt'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
+            # 1. PROCESSAMENTO DE DADOS
+            df["Total_Num"] = df["Total"].apply(converter_valor)
+            df['Data_dt'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
+            
+            # FASE 1: CRM COM 3 MENSAGENS PERSONALIZADAS
             st.markdown("### 🧠 Gestão de Retorno (CRM)")
             with st.expander("Ver Clientes para Recontato", expanded=False):
-                hoje = pd.to_datetime(date.today()); df_valid = df.dropna(subset=['Data_dt'])
+                hoje = pd.to_datetime(date.today())
+                
+                # Filtra apenas datas válidas
+                df_valid = df.dropna(subset=['Data_dt'])
                 if not df_valid.empty:
                     df_crm = df_valid.groupby("Cliente").agg({'Data_dt': 'max', 'Telefone': 'first', 'Carro': 'first'}).reset_index()
                     df_crm["Dias sem vir"] = (hoje - df_crm["Data_dt"]).dt.days
+                    
+                    # Classificação Visual
                     def classificar_status(dias):
                         if dias <= 30: return "🟢 Recente"
                         elif dias <= 90: return "🟡 Atenção"
                         else: return "🔴 Inativo"
-                    df_crm["Status"] = df_crm["Dias sem vir"].apply(classificar_status); df_crm = df_crm.sort_values(by="Dias sem vir", ascending=True)
-                    st.dataframe(df_crm[["Cliente", "Status", "Dias sem vir", "Carro"]], use_container_width=True, hide_index=True, column_config={"Dias sem vir": st.column_config.NumberColumn("Dias Ausente", format="%d dias"), "Status": st.column_config.TextColumn("Status", help="Estado atual do cliente")})
-                else: st.info("Sem dados de datas válidos para CRM.")
+                    
+                    df_crm["Status"] = df_crm["Dias sem vir"].apply(classificar_status)
+                    
+                    # Criação do Link de WhatsApp com as 3 MENSAGENS APROVADAS
+                    def criar_link_zap(row):
+                        tel = limpar_numero(row["Telefone"])
+                        if not tel: return None
+                        nome = row["Cliente"].split()[0]
+                        carro = row["Carro"]
+                        
+                        # Lógica das Mensagens
+                        if row["Dias sem vir"] <= 30: # RECENTE - Opção A (Cuidado)
+                            msg = f"Olá {nome}, tudo bem? Passando apenas para saber como está a conservação do {carro} após o nosso serviço. Se precisar de algum suporte, estou à disposição!"
+                        elif row["Dias sem vir"] <= 90: # ATENÇÃO - Opção B (Lembrete)
+                            msg = f"Fala {nome}, tudo na paz? Passando para desejar uma ótima semana! Se precisar dar aquele talento no {carro} nesses dias, é só dar um alô."
+                        else: # INATIVO - Opção C (Técnica)
+                            msg = f"Olá {nome}. Faz um tempinho que cuidamos do {carro}, espero que esteja tudo certo. Quando sentir que é hora de renovar a proteção ou a limpeza, conte comigo."
+                            
+                        link = f"https://wa.me/55{tel}?text={urllib.parse.quote(msg)}"
+                        return link
+
+                    df_crm["LinkZap"] = df_crm.apply(criar_link_zap, axis=1)
+                    
+                    # Ordenar e mostrar
+                    df_crm = df_crm.sort_values(by="Dias sem vir", ascending=True)
+                    
+                    st.dataframe(
+                        df_crm[["Cliente", "Status", "Dias sem vir", "Carro", "LinkZap"]],
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Dias sem vir": st.column_config.NumberColumn("Dias Ausente", format="%d dias"),
+                            "Status": st.column_config.TextColumn("Status", help="Estado atual do cliente"),
+                            "LinkZap": st.column_config.LinkColumn(
+                                "Ação Rápida", 
+                                display_text="📲 Chamar no Zap",
+                                help="Clique para abrir o WhatsApp já com a mensagem pronta"
+                            )
+                        }
+                    )
+                else:
+                    st.info("Sem dados de datas válidos para CRM.")
+
             st.write("---")
+
+            # 3. RANKING E HISTÓRICO GERAL
             ranking = df.groupby("Cliente")["Total_Num"].sum().reset_index().sort_values(by="Total_Num", ascending=False).head(5)
             st.markdown("### 🏆 Ranking VIP (Top 5)")
             col_rank = st.columns(len(ranking))
             for idx, (i, r) in enumerate(ranking.iterrows()):
                 medalha, cor = ("🥇" if idx==0 else "🥈" if idx==1 else "🥉" if idx==2 else f"{idx+1}º"), ("bg-gold" if idx==0 else "")
                 st.markdown(f'<div class="dash-card {cor}" style="height:100px; padding:10px; margin-bottom:10px"><div style="font-size:20px">{medalha}</div><div style="font-weight:bold; font-size:14px">{r["Cliente"]}</div><div style="font-size:12px">{formatar_moeda(r["Total_Num"])}</div></div>', unsafe_allow_html=True)
+            
             st.write("---")
-            busca = st.text_input("🔍 Buscar no Histórico...").strip().lower(); df_f = df.iloc[::-1] # Inverte ordem
+            busca = st.text_input("🔍 Buscar no Histórico...").strip().lower()
+            df_f = df.iloc[::-1] # Inverte ordem
             if busca: df_f = df_f[df_f.apply(lambda r: busca in str(r).lower(), axis=1)]
+            
             for _, r in df_f.iterrows():
                 total_hist = formatar_moeda(converter_valor(r["Total"]))
                 st.markdown(f'<div class="history-card" style="border-left:5px solid #28a745"><div style="display:flex;justify-content:space-between;"><div><b>{r["Carro"]}</b><br>{r["Cliente"]} | {r["Placa"]}</div><div style="text-align:right"><b style="color:#39FF14">{total_hist}</b><br><small>{r["Data"]}</small></div></div><div style="color:#888">{r.get("Serviços", "")}</div></div>', unsafe_allow_html=True)
         else: st.info("Histórico Vazio.")
-    except Exception as e: st.error(f"Erro no Histórico: {e}")
+    except Exception as e:
+        st.error(f"Erro no Histórico: {e}")
 
 if menu_selecionado == "DASHBOARD": page_dashboard()
 elif menu_selecionado == "AGENDA": page_agendamento()
