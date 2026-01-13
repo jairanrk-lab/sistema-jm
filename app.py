@@ -611,57 +611,83 @@ def page_estoque():
 
 def page_financeiro():
     st.markdown('## <i class="bi bi-cash-coin" style="color: #28a745;"></i> Gestão Financeira', unsafe_allow_html=True)
-    try:
-        df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); comissao_pendente, fundo_caixa, total_bruto, total_despesas = 0.0, 0.0, 0.0, 0.0
-        if not df_v.empty:
-            df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-            if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
-            for c in ["Total", "Valor comissao", "Fundo caixa"]:
-                if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
-            df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce'); hoje = datetime.now(); df_mes = df_v[(df_v['Data_dt'].dt.month == hoje.month) & (df_v['Data_dt'].dt.year == hoje.year)]
-            total_bruto = df_mes[df_mes["Status"].str.strip()=="Concluído"]["Total"].sum(); df_pendente = df_v[df_v["Status comissao"] != "Pago"]
-            for index, row in df_pendente.iterrows():
-                 if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")): comissao_pendente += (row["Total"] * 0.40)
-            if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
-        if not df_d.empty:
-            df_d.columns = [c.strip().capitalize() for c in df_d.columns]; df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
-            df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
-            if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
-        
-        c1, c2, c3 = st.columns(3)
-        c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
-        
-        # LUCRO REAL = (Bruto * 0.5) - Despesas - Custo Fixo
-        custo_fixo = obter_custo_fixo()
-        lucro_liq_real = (total_bruto * 0.50) - total_despesas - custo_fixo
-        
-        c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado Fixo de {formatar_moeda(custo_fixo)})</small></div>', unsafe_allow_html=True)
-        st.write("---")
-        st.markdown("### 📋 Detalhe do que falta pagar")
-        if not df_v.empty:
-            df_p = df_pendente[["Data", "Cliente", "Carro", "Placa", "Total"]].copy()
-            df_p["Comissão"] = df_p["Total"] * 0.40
-            st.dataframe(df_p, use_container_width=True, hide_index=True, column_config={"Total": st.column_config.NumberColumn("Total", format="R$ %.2f"), "Comissão": st.column_config.ProgressColumn("Comissão (40%)", help="Valor a pagar para a equipe", format="R$ %.2f", min_value=0, max_value=1000), "Data": st.column_config.TextColumn("Data", help="Data do serviço")})
-        
-        col_pay, col_pdf = st.columns([1, 2])
-        with col_pay:
-            if comissao_pendente > 0:
-                if st.button("✅ Pagar Todas Comissões"):
-                    sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records(); header = ws.row_values(1); col_idx = -1
-                    for idx, h in enumerate(header):
-                        if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
-                    if col_idx > 0:
-                        for i, linha in enumerate(dados):
-                            v = converter_valor(linha.get("Valor Comissao", "0"))
-                            if v > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
-                        st.success("Pago!"); t_sleep.sleep(1); st.rerun()
-        with col_pdf:
-            if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
-                resumo = {"mes": datetime.now().strftime("%m/%Y"), "faturamento": total_bruto, "despesas": total_despesas, "comissoes": total_bruto * 0.40, "lucro": lucro_liq_real}
-                st.download_button("📥 Download PDF", gerar_relatorio_mensal(df_mes, resumo), f"Relatorio_{resumo['mes'].replace('/','_')}.pdf", "application/pdf")
-    except Exception as e: st.error(f"Erro no Financeiro: {e}")
+    
+    # Abas para organizar
+    tab_caixa, tab_calc = st.tabs(["FLUXO DE CAIXA", "CALCULADORA DE PREÇO 🆕"])
+    
+    with tab_caixa:
+        try:
+            df_v = carregar_dados("Vendas"); df_d = carregar_dados("Despesas"); comissao_pendente, fundo_caixa, total_bruto, total_despesas = 0.0, 0.0, 0.0, 0.0
+            if not df_v.empty:
+                df_v.columns = [c.strip().capitalize() for c in df_v.columns]
+                if "Status comissao" not in df_v.columns: df_v["Status comissao"] = "Pendente"
+                for c in ["Total", "Valor comissao", "Fundo caixa"]:
+                    if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
+                df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce'); hoje = datetime.now(); df_mes = df_v[(df_v['Data_dt'].dt.month == hoje.month) & (df_v['Data_dt'].dt.year == hoje.year)]
+                total_bruto = df_mes[df_mes["Status"].str.strip()=="Concluído"]["Total"].sum(); df_pendente = df_v[df_v["Status comissao"] != "Pago"]
+                for index, row in df_pendente.iterrows():
+                     if row.get("Valor comissao", 0) > 0 or "Equipe" in str(row.get("Funcionario", "")): comissao_pendente += (row["Total"] * 0.40)
+                if "Fundo caixa" in df_v.columns: fundo_caixa = df_v["Fundo caixa"].sum()
+            if not df_d.empty:
+                df_d.columns = [c.strip().capitalize() for c in df_d.columns]; df_d['Data_dt'] = pd.to_datetime(df_d['Data'], dayfirst=True, errors='coerce')
+                df_d_mes = df_d[(df_d['Data_dt'].dt.month == hoje.month) & (df_d['Data_dt'].dt.year == hoje.year)]
+                if "Valor" in df_d.columns: total_despesas = df_d_mes["Valor"].apply(converter_valor).sum()
+            
+            c1, c2, c3 = st.columns(3)
+            c1.markdown(f'<div class="dash-card bg-red"><h4>A PAGAR (COMISSÃO)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(comissao_pendente)}</div><small>Pendente Equipe</small></div>', unsafe_allow_html=True)
+            c2.markdown(f'<div class="dash-card bg-blue"><h4>CAIXA EMPRESA (10%)</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(fundo_caixa)}</div><small>Acumulado Total</small></div>', unsafe_allow_html=True)
+            
+            custo_fixo = obter_custo_fixo()
+            lucro_liq_real = (total_bruto * 0.50) - total_despesas - custo_fixo
+            
+            c3.markdown(f'<div class="dash-card bg-green"><h4>LUCRO LÍQUIDO REAL</h4><div style="font-size:24px;font-weight:bold">{formatar_moeda(lucro_liq_real)}</div><small>Mês Atual (Já descontado Fixo de {formatar_moeda(custo_fixo)})</small></div>', unsafe_allow_html=True)
+            
+            st.write("---")
+            col_pay, col_pdf = st.columns([1, 2])
+            with col_pay:
+                if comissao_pendente > 0:
+                    if st.button("✅ Pagar Todas Comissões"):
+                        sheet = conectar_google_sheets(); ws = sheet.worksheet("Vendas"); dados = ws.get_all_records(); header = ws.row_values(1); col_idx = -1
+                        for idx, h in enumerate(header):
+                            if "status" in h.lower() and "comiss" in h.lower(): col_idx = idx + 1; break
+                        if col_idx > 0:
+                            for i, linha in enumerate(dados):
+                                v = converter_valor(linha.get("Valor Comissao", "0"))
+                                if v > 0 and str(linha.get("Status Comissao", "")) != "Pago": ws.update_cell(i + 2, col_idx, "Pago")
+                            st.success("Pago!"); t_sleep.sleep(1); st.rerun()
+            with col_pdf:
+                if st.button("📄 Baixar Relatório Mensal", use_container_width=True):
+                    resumo = {"mes": datetime.now().strftime("%m/%Y"), "faturamento": total_bruto, "despesas": total_despesas, "comissoes": total_bruto * 0.40, "lucro": lucro_liq_real}
+                    st.download_button("📥 Download PDF", gerar_relatorio_mensal(df_mes, resumo), f"Relatorio_{resumo['mes'].replace('/','_')}.pdf", "application/pdf")
+        except Exception as e: st.error(f"Erro no Financeiro: {e}")
 
+    with tab_calc:
+        st.markdown("### 🧮 Simulador de Preço Ideal")
+        st.caption("Não chute o preço! Calcule baseado no seu custo real.")
+        
+        with st.container(border=True):
+            cc1, cc2 = st.columns(2)
+            custo_prod = cc1.number_input("Custo de Produtos (Estimado)", value=15.0, step=5.0, help="Quanto você gasta de shampoo, cera, etc neste serviço?")
+            horas = cc2.number_input("Tempo Gasto (Horas)", value=2.0, step=0.5)
+            valor_hora = cc1.number_input("Valor da sua Hora (Mão de Obra)", value=30.0, step=5.0, help="Quanto vale 1 hora do seu trabalho?")
+            
+            st.write("---")
+            preco_cobrado = st.number_input("💰 Quanto você quer cobrar?", value=100.0, step=10.0)
+            
+            custo_total = custo_prod + (horas * valor_hora)
+            lucro = preco_cobrado - custo_total
+            margem = (lucro / preco_cobrado) * 100 if preco_cobrado > 0 else 0
+            
+            col_res1, col_res2 = st.columns(2)
+            col_res1.metric("Custo Total (Produtos + Tempo)", formatar_moeda(custo_total))
+            col_res2.metric("Seu Lucro Real", formatar_moeda(lucro), delta=f"{margem:.1f}% Margem")
+            
+            if lucro < 0:
+                st.error("⚠️ PREJUÍZO! Você está pagando para trabalhar.")
+            elif margem < 30:
+                st.warning("⚠️ Margem baixa. Considere aumentar o preço.")
+            else:
+                st.success("✅ Preço Saudável!")
 def page_agendamento():
     st.markdown('## <i class="bi bi-calendar-check" style="color: white;"></i> Agenda Integrada', unsafe_allow_html=True)
     tab_new, tab_list = st.tabs(["NOVO AGENDAMENTO", "LISTA DE SERVIÇOS"]) 
