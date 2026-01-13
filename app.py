@@ -782,7 +782,7 @@ def page_historico():
     except Exception as e: st.error(f"Erro no Histórico: {e}")
 
 # ==============================================================================
-# --- 6. ÁREA PÚBLICA (MODO CLIENTE - REFINADO) ---
+# --- 7. ÁREA PÚBLICA (MODO CLIENTE - REFINADO) ---
 # ==============================================================================
 def area_cliente():
     st.markdown("<br>", unsafe_allow_html=True)
@@ -846,7 +846,7 @@ def area_cliente():
                 st.warning("⚠️ Preencha Nome, WhatsApp e Veículo.")
 
 # ==============================================================================
-# --- 7. ÁREA ADMIN (CONTROLADOR) ---
+# --- 8. ÁREA ADMIN (CONTROLADOR) ---
 # ==============================================================================
 def area_admin():
     # MENU ORIGINAL COM A LÓGICA ANTIGA
@@ -871,7 +871,7 @@ def area_admin():
         page_historico()
 
 # ==============================================================================
-# --- 8. CONTROLE DE FLUXO (PONTO DE ENTRADA) ---
+# --- 9. CONTROLE DE FLUXO (PONTO DE ENTRADA) ---
 # ==============================================================================
 
 if st.session_state.get("password_correct", False):
