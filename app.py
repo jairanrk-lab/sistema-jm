@@ -478,7 +478,8 @@ def page_dashboard():
         
         if not df_v.empty:
             df_v.columns = [c.strip().capitalize() for c in df_v.columns]
-            for c in ["Total"]: df_v[c] = df_v[c].apply(converter_valor)
+            for c in ["Total"]: 
+                if c in df_v.columns: df_v[c] = df_v[c].apply(converter_valor)
             df_v['Data_dt'] = pd.to_datetime(df_v['Data'], dayfirst=True, errors='coerce')
             df_mes = df_v[(df_v['Data_dt'].dt.month == mes_atual) & (df_v['Data_dt'].dt.year == ano_atual)]
             if "Status" in df_v.columns:
@@ -493,39 +494,13 @@ def page_dashboard():
             df_d_mes = df_d[(df_d['Data_dt'].dt.month == mes_atual) & (df_d['Data_dt'].dt.year == ano_atual)]
             if "Valor" in df_d.columns: despesa_mes = df_d_mes["Valor"].apply(converter_valor).sum()
         
+        # Custo Fixo e Lucro
         custo_fixo = obter_custo_fixo()
         lucro_final = lucro_operacional - despesa_mes - custo_fixo
+        
         META = 5000.00; pct = min((receita_mes / META) * 100, 100.0) if META > 0 else 0
         
-        # --- LÓGICA DE ALERTA DE ESTOQUE (Só aparece se tiver emergência) ---
-        alerta_txt = ""
-        try:
-            sheet = conectar_google_sheets()
-            if sheet:
-                ws_est = sheet.worksheet("Estoque")
-                dados_est = ws_est.get_all_records()
-                df_est = pd.DataFrame(dados_est)
-                if not df_est.empty and "Atual_ml" in df_est.columns:
-                    itens_criticos = 0
-                    for i, row in df_est.iterrows():
-                        try: atual = float(str(row.get("Atual_ml", 0)).replace(",", "."))
-                        except: atual = 0.0
-                        if atual < 1000: # Critério: Menos de 1 litro (ajustável)
-                            itens_criticos += 1
-                    if itens_criticos > 0:
-                        alerta_txt = f"""
-                        <div class="stock-alert">
-                            <i class="bi bi-exclamation-triangle-fill" style="font-size: 24px;"></i>
-                            <div>
-                                <div style="font-weight:bold; font-size:16px;">ATENÇÃO: ESTOQUE BAIXO</div>
-                                <div style="font-size:14px;">{itens_criticos} produto(s) precisam de reposição urgente. Verifique a aba Estoque.</div>
-                            </div>
-                        </div>
-                        """
-        except: pass
-
-        if alerta_txt: st.markdown(alerta_txt, unsafe_allow_html=True)
-
+        # --- SEUS CARDS ORIGINAIS (MANTIDOS) ---
         st.markdown(f'<div style="background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"><div style="display:flex; justify-content:space-between; color:#bbb; font-size:12px; margin-bottom:5px;"><span>🎯 META: {formatar_moeda(META)}</span><span>ATUAL: <b style="color:white">{formatar_moeda(receita_mes)}</b></span></div><div style="width:100%; background-color:#333; border-radius:15px; height:22px;"><div style="width:{pct}%; background: linear-gradient(90deg, #00b09b, #96c93d); height:22px; border-radius:15px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; transition: width 1s ease-in-out; box-shadow: 0 0 10px rgba(150, 201, 61, 0.5);"><span style="color:white; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px black;">{pct:.1f}%</span></div></div></div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
@@ -538,27 +513,53 @@ def page_dashboard():
         
         st.write("---")
         
-        col_graf, col_prox = st.columns([2, 1])
-        with col_graf:
-            st.markdown('### <i class="bi bi-graph-up-arrow" style="color: #39FF14;"></i> Performance Mensal', unsafe_allow_html=True)
-            if not df_mes.empty:
-                df_chart = df_mes.groupby(df_mes['Data_dt'].dt.date)['Total'].sum().reset_index(); df_chart.columns = ['Data', 'Faturamento']; df_chart = df_chart.sort_values('Data')
-                fig = go.Figure()
-                fig.add_trace(go.Bar(x=df_chart['Data'], y=df_chart['Faturamento'], marker_color='rgba(255, 255, 255, 0.08)', showlegend=False, hoverinfo='none'))
-                fig.add_trace(go.Scatter(x=df_chart['Data'], y=df_chart['Faturamento'], mode='lines+markers', line=dict(color='#E0E0E0', width=3, shape='spline'), marker=dict(size=6, color='#FFFFFF', line=dict(width=1, color='#000000')), showlegend=False, hovertemplate='Dia %{x|%d/%m}<br><b>R$ %{y:,.2f}</b><extra></extra>'))
-                fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=10, b=10), height=320, xaxis=dict(showgrid=False, tickformat='%d/%m', tickfont=dict(color='#888'), linecolor='rgba(255,255,255,0.2)'), yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', tickfont=dict(color='#888'), zeroline=False))
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-            else: st.info("Sem dados de vendas neste mês.")
+        # --- AQUI ESTÁ A NOVIDADE (GRÁFICOS + ALERTA) ---
         
-        with col_prox:
-            st.markdown('### <i class="bi bi-calendar-week"></i> Próximos', unsafe_allow_html=True)
-            if not df_a.empty:
-                df_a['Data_dt'] = pd.to_datetime(df_a['Data'], dayfirst=True, errors='coerce'); hoje_dia = pd.to_datetime(date.today()); df_futuro = df_a[df_a['Data_dt'] >= hoje_dia].sort_values(by="Data_dt").head(3)
-                if not df_futuro.empty:
-                    for _, r in df_futuro.iterrows():
-                        st.markdown(f'<div style="background-color: rgba(30,30,30,0.4); backdrop-filter: blur(5px); padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #39FF14;"><div style="font-weight:bold; color:white; font-size:14px;"><i class="bi bi-clock"></i> {r["Data"]} - {r["Hora"]}</div><div style="color:#ddd; font-size:13px; margin-top:4px;"><b>{r["Veiculo"]}</b></div><div style="color:#aaa; font-size:12px;">{r["Cliente"]}</div></div>', unsafe_allow_html=True)
-                else: st.info("Sem agendamentos futuros.")
-            else: st.info("Agenda vazia.")
+        # 1. Alerta de Estoque Discreto
+        try:
+            sheet = conectar_google_sheets()
+            if sheet:
+                ws_est = sheet.worksheet("Estoque"); dados_est = ws_est.get_all_records(); df_est = pd.DataFrame(dados_est)
+                if not df_est.empty and "Atual_ml" in df_est.columns:
+                    itens_criticos = 0
+                    for i, row in df_est.iterrows():
+                         # Tenta converter, se der erro assume 0
+                        try: at = float(str(row.get("Atual_ml", 0)).replace(",", "."))
+                        except: at = 0.0
+                        if at < 1000: itens_criticos += 1
+                    
+                    if itens_criticos > 0:
+                        st.markdown(f"""
+                        <div class="stock-alert">
+                            <i class="bi bi-exclamation-triangle-fill" style="font-size: 20px;"></i>
+                            <span style="font-weight:bold;">ALERTA:</span> {itens_criticos} produto(s) abaixo do nível crítico!
+                        </div>
+                        """, unsafe_allow_html=True)
+        except: pass
+
+        # 2. Gráficos de Inteligência (Pizza e Linha)
+        if not df_mes.empty:
+            g1, g2 = st.columns(2)
+            with g1:
+                st.markdown('###### <i class="bi bi-pie-chart"></i> Serviços Favoritos', unsafe_allow_html=True)
+                # Tenta agrupar por 'Carro' (ou 'Serviços' se tiver separado) para simular categorias
+                if "Carro" in df_mes.columns:
+                    df_pie = df_mes["Carro"].value_counts().reset_index().head(5)
+                    df_pie.columns = ["Tipo", "Qtd"]
+                    fig_pie = px.pie(df_pie, values="Qtd", names="Tipo", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
+                    fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="white", showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=200)
+                    st.plotly_chart(fig_pie, use_container_width=True)
+            
+            with g2:
+                st.markdown('###### <i class="bi bi-graph-up"></i> Evolução Diária', unsafe_allow_html=True)
+                df_chart = df_mes.groupby(df_mes['Data_dt'].dt.date)['Total'].sum().reset_index()
+                df_chart.columns = ['Data', 'Faturamento']
+                fig = px.line(df_chart, x='Data', y='Faturamento', markers=True)
+                fig.update_traces(line_color='#39FF14', line_width=3)
+                fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(255,255,255,0.05)', font_color="white", margin=dict(t=10, b=10, l=0, r=0), height=200, xaxis_showgrid=False)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Lance vendas neste mês para ver os gráficos!")
 
     except Exception as e: st.error(f"Erro no Dashboard: {e}")
 
