@@ -403,32 +403,51 @@ def page_historico():
         st.dataframe(df)
     except: st.error("Erro ao carregar.")
 
-# --- ÁREA CLIENTE (NOVA) ---
+# --- COLE ISSO LOGO APÓS AS OUTRAS FUNÇÕES (Ex: depois de page_historico) ---
+
 def area_cliente():
     st.markdown("<br><br>", unsafe_allow_html=True)
-    if os.path.exists("logo.png"): st.image("logo.png", use_container_width=True)
-    st.markdown("<h2 style='text-align:center; color:#D90429'>JM DETAIL</h2>", unsafe_allow_html=True)
+    # Tenta carregar a logo, se não tiver, mostra texto
+    if os.path.exists("logo.png"): 
+        c1, c2, c3 = st.columns([1,2,1])
+        with c2: st.image("logo.png", use_container_width=True)
+    else: 
+        st.markdown("<h1 style='text-align:center; color:#D90429'>JM DETAIL</h1>", unsafe_allow_html=True)
+    
+    st.markdown("<h3 style='text-align:center; color:white'>Agendamento Online</h3>", unsafe_allow_html=True)
     
     with st.container(border=True):
-        st.info("Agendamento Online")
         nome = st.text_input("Seu Nome *")
-        tel = st.text_input("Seu WhatsApp *")
-        carro = st.text_input("Modelo do Veículo *")
+        tel = st.text_input("Seu WhatsApp *", placeholder="(75) 99999-9999")
+        carro = st.text_input("Modelo do Veículo *", placeholder="Ex: Fiat Toro...")
         
-        c_dt, c_hr = st.columns(2)
-        dt = c_dt.date_input("Data Preferida", value=date.today())
-        hr = c_hr.selectbox("Horário *", ["08:00 - Manhã", "13:00 - Tarde"])
+        c1, c2 = st.columns(2)
+        dt = c1.date_input("Data Preferida", value=date.today())
+        hr = c2.selectbox("Horário *", ["08:00 - Manhã", "13:00 - Tarde"])
         
-        servs = st.multiselect("Serviços de Interesse", ["Lavagem Simples", "Lavagem Detalhada", "Polimento", "Higienização"], placeholder="Selecione...")
+        servs = st.multiselect("Serviços de Interesse", 
+                               ["Lavagem Simples", "Lavagem Detalhada", "Polimento", "Higienização", "Vitrificação"],
+                               placeholder="Selecione...")
+        obs = st.text_area("Observações")
         
         if st.button("SOLICITAR AGENDAMENTO", use_container_width=True):
             if nome and tel and carro:
-                dados = {"Data": dt.strftime("%d/%m/%Y"), "Hora": hr, "Cliente": nome, "Telefone": tel, "Veiculo": carro, "Servicos": ", ".join(servs), "Status": "Pendente (Site)", "Total": 0}
+                # Salva como 'Pendente (Site)' para você diferenciar
+                dados = {
+                    "Data": dt.strftime("%d/%m/%Y"), "Hora": hr, 
+                    "Cliente": nome, "Telefone": tel, "Veiculo": carro, 
+                    "Servicos": ", ".join(servs), "Obs": obs, 
+                    "Status": "Pendente (Site)", "Total": 0
+                }
                 salvar_no_google("Agendamentos", dados)
-                st.success("Solicitação enviada!")
-                link = f"https://wa.me/5575998303753?text=Ola, fiz um agendamento pelo site para o carro {carro}."
-                st.markdown(f"<a href='{link}' target='_blank'><button style='background:#25D366; color:white; width:100%; border:none; padding:10px; border-radius:10px'>Finalizar no WhatsApp</button></a>", unsafe_allow_html=True)
-            else: st.warning("Preencha os campos obrigatórios.")
+                st.success("✅ Solicitação enviada!")
+                
+                # Link para finalizar no WhatsApp
+                msg = f"Olá JM! Agendei pelo site: {carro} para dia {dt.strftime('%d/%m')} às {hr}."
+                link = f"https://wa.me/5575998303753?text={urllib.parse.quote(msg)}"
+                st.markdown(f"<br><a href='{link}' target='_blank'><button style='background:#25D366; color:white; border:none; padding:10px; width:100%; border-radius:10px; font-weight:bold'>Finalizar no WhatsApp</button></a>", unsafe_allow_html=True)
+            else:
+                st.warning("Preencha os campos obrigatórios (*)")
 
 # ==============================================================================
 # --- 5. LÓGICA PRINCIPAL ---
