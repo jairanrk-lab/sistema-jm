@@ -442,7 +442,11 @@ def area_cliente():
         # HORÁRIOS FIXOS COMO PEDIDO
         hr = c_hr.selectbox("Horário de Início *", ["08:00 - Manhã", "13:00 - Tarde"], help="Turnos fixos para garantir qualidade.")
         
-        servs = st.multiselect("Serviços de Interesse", ["Lavagem Simples", "Lavagem Detalhada", "Higienização Interna", "Polimento", "Vitrificação", "Lavagem de Motor"])
+        servs = st.multiselect(
+    "Serviços de Interesse", 
+    ["Lavagem Simples", "Lavagem Detalhada", "Higienização Interna", "Polimento", "Vitrificação", "Lavagem de Motor"],
+    placeholder="Selecione os serviços..."
+)
         obs = st.text_area("Observações (Opcional)")
         
         if st.button("🚀 SOLICITAR AGENDAMENTO", use_container_width=True):
