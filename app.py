@@ -142,7 +142,7 @@ def formatar_moeda(valor):
 
 # Conexão com Google Sheets (API)
 def conectar_google_sheets():
-    ID_FIXO = "1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
+    ID_FIXO = "1-/1-8Xie9cOvQ26WRHJ_ltUr1kfqbIvHLr0qP21h6mqZjg"
     try:
         if "app" in st.secrets and "spreadsheet_id" in st.secrets["app"]:
             ID_FIXO = st.secrets["app"]["spreadsheet_id"]
